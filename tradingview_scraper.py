@@ -1,19 +1,15 @@
 """
 Modulo per catturare screenshot di TradingView con indicatori tecnici
-Versione ottimizzata per Docker con Google Chrome
+Versione Playwright - Molto più stabile e semplice in Docker
 """
 import time
 from datetime import datetime
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+from playwright.sync_api import sync_playwright
 import os
 
 
 class TradingViewScraper:
-    """Classe per catturare screenshot di grafici TradingView"""
+    """Classe per catturare screenshot di grafici TradingView usando Playwright"""
     
     def __init__(self, symbol="XAUUSD", broker="EIGHTCAP"):
         """
@@ -25,47 +21,33 @@ class TradingViewScraper:
         """
         self.symbol = symbol
         self.broker = broker
-        self.driver = None
+        self.playwright = None
+        self.browser = None
+        self.page = None
         
-    def _init_driver(self):
-        """Inizializza il driver Selenium con Chrome - Versione Docker"""
-        chrome_options = Options()
+    def _init_browser(self):
+        """Inizializza Playwright e il browser"""
+        self.playwright = sync_playwright().start()
         
-        # Opzioni essenziali per Docker
-        chrome_options.add_argument('--headless=new')  # Usa nuovo headless mode
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--disable-software-rasterizer')
+        # Playwright gestisce automaticamente il browser!
+        self.browser = self.playwright.chromium.launch(
+            headless=True,
+            args=[
+                '--no-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-software-rasterizer',
+            ]
+        )
         
-        # Dimensioni finestra
-        chrome_options.add_argument('--window-size=1920,1200')
+        # Crea un nuovo contesto browser con viewport specifico
+        context = self.browser.new_context(
+            viewport={'width': 1920, 'height': 1200},
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        )
         
-        # Ottimizzazioni per stabilità
-        chrome_options.add_argument('--disable-blink-features=AutomationControlled')
-        chrome_options.add_argument('--disable-extensions')
-        chrome_options.add_argument('--disable-infobars')
-        chrome_options.add_argument('--disable-notifications')
-        chrome_options.add_argument('--disable-popup-blocking')
-        
-        # User agent
-        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-        
-        # Usa il path di Google Chrome se disponibile, altrimenti chromium
-        chrome_binary = os.environ.get('CHROME_BIN', '/usr/bin/google-chrome')
-        if os.path.exists(chrome_binary):
-            chrome_options.binary_location = chrome_binary
-        
-        # Path del chromedriver
-        chromedriver_path = os.environ.get('CHROMEDRIVER', '/usr/bin/chromedriver')
-        
-        try:
-            service = Service(chromedriver_path)
-            self.driver = webdriver.Chrome(service=service, options=chrome_options)
-            print(f"    ✓ Chrome inizializzato: {chrome_binary}")
-        except Exception as e:
-            print(f"    ❌ Errore inizializzazione Chrome: {e}")
-            raise
+        self.page = context.new_page()
+        print(f"    ✓ Browser Playwright inizializzato")
         
     def _build_url_with_studies(self, timeframe):
         """
@@ -88,31 +70,28 @@ class TradingViewScraper:
     
     def _wait_for_load_and_clean(self):
         """Attende caricamento e pulisce l'interfaccia"""
-        # Attesa iniziale
+        # Attesa iniziale per caricamento
         time.sleep(10)
         
         try:
-            body = self.driver.find_element(By.TAG_NAME, "body")
-            
             # Chiudi popup con Escape
             for _ in range(5):
-                body.send_keys(Keys.ESCAPE)
+                self.page.keyboard.press('Escape')
                 time.sleep(0.3)
             
             # Rimuovi dialog/modal con JavaScript
-            js_cleanup = """
-            // Rimuovi tutti i dialog
-            document.querySelectorAll('[role="dialog"]').forEach(el => el.remove());
-            
-            // Rimuovi modal wrapper
-            document.querySelectorAll('[class*="modal"]').forEach(el => {
-                if (!el.querySelector('canvas')) el.remove();
-            });
-            
-            // Rimuovi overlay/backdrop
-            document.querySelectorAll('[class*="overlay"], [class*="backdrop"]').forEach(el => el.remove());
-            """
-            self.driver.execute_script(js_cleanup)
+            self.page.evaluate("""
+                // Rimuovi tutti i dialog
+                document.querySelectorAll('[role="dialog"]').forEach(el => el.remove());
+                
+                // Rimuovi modal wrapper
+                document.querySelectorAll('[class*="modal"]').forEach(el => {
+                    if (!el.querySelector('canvas')) el.remove();
+                });
+                
+                // Rimuovi overlay/backdrop
+                document.querySelectorAll('[class*="overlay"], [class*="backdrop"]').forEach(el => el.remove());
+            """)
             time.sleep(1)
             
         except Exception as e:
@@ -130,25 +109,25 @@ class TradingViewScraper:
             True se successo, False altrimenti
         """
         try:
-            # Inizializza driver se necessario
-            if self.driver is None:
-                self._init_driver()
+            # Inizializza browser se necessario
+            if self.page is None:
+                self._init_browser()
             
             # Costruisci URL con indicatori
             url = self._build_url_with_studies(timeframe)
             
             # Carica pagina
             print(f"  Caricamento con indicatori pre-configurati...")
-            self.driver.get(url)
+            self.page.goto(url, wait_until='networkidle', timeout=60000)
             
             # Attendi caricamento e pulisci
             self._wait_for_load_and_clean()
             
             print(f"  ✓ Grafico caricato")
             
-            # Cattura screenshot
+            # Cattura screenshot - Playwright lo fa in modo molto più affidabile!
             print(f"  📸 Cattura screenshot...")
-            self.driver.save_screenshot(output_path)
+            self.page.screenshot(path=output_path, full_page=False)
             
             print(f"  ✅ Salvato: {output_path}")
             return True
@@ -183,6 +162,7 @@ class TradingViewScraper:
         print(f"🚀 CATTURA SCREENSHOT - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"   Simbolo: {self.broker}:{self.symbol}")
         print(f"   Indicatori: EMA 9, MACD, RSI (pre-caricati)")
+        print(f"   Engine: Playwright (stabile e affidabile)")
         print("="*70)
         print()
         
@@ -216,10 +196,16 @@ class TradingViewScraper:
         return screenshots
     
     def close(self):
-        """Chiude il browser"""
-        if self.driver:
+        """Chiude il browser e Playwright"""
+        if self.browser:
             try:
-                self.driver.quit()
+                self.browser.close()
+            except:
+                pass
+        
+        if self.playwright:
+            try:
+                self.playwright.stop()
             except:
                 pass
 
