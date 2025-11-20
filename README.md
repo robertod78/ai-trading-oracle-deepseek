@@ -1,28 +1,20 @@
 # AI Trading Oracle (deepseek Version)
 Ai automatic signal generation based on TradinView screenshots and Deepseek  Evaluatios
 
-Trading Bot - Guida Docker
+# Trading Bot - Guida Docker
 
 Questa guida spiega come eseguire il Trading Bot in un container Docker.
 
-Prerequisiti
+## Prerequisiti
 
-•
-Docker installato (versione 20.10 o superiore)
+- Docker installato (versione 20.10 o superiore)
+- Docker Compose installato (versione 1.29 o superiore)
+- Chiave API DeepSeek
 
-•
-Docker Compose installato (versione 1.29 o superiore)
+## Installazione Docker
 
-•
-Chiave API DeepSeek
-
-Installazione Docker
-
-Ubuntu/Debian
-
-Bash
-
-
+### Ubuntu/Debian
+```bash
 # Installa Docker
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
@@ -30,278 +22,195 @@ sudo sh get-docker.sh
 # Installa Docker Compose
 sudo apt-get install docker-compose-plugin
 
-# Aggiungi utente al gruppo docker (opzionale )
+# Aggiungi utente al gruppo docker (opzionale)
 sudo usermod -aG docker $USER
+```
 
-
-Verifica installazione
-
-Bash
-
-
+### Verifica installazione
+```bash
 docker --version
 docker compose version
+```
 
+## Configurazione
 
-Configurazione
-
-1. Crea il file .env
+### 1. Crea il file .env
 
 Copia il template e modifica con i tuoi valori:
 
-Bash
-
-
+```bash
 cp .env.template .env
 nano .env
-
+```
 
 Inserisci almeno la chiave API:
-
-Bash
-
-
+```bash
 DEEPSEEK_API_KEY=sk-la-tua-chiave-api
+```
 
+### 2. Variabili d'ambiente disponibili
 
-2. Variabili d'ambiente disponibili
+| Variabile | Descrizione | Default | Obbligatorio |
+|-----------|-------------|---------|--------------|
+| `DEEPSEEK_API_KEY` | Chiave API DeepSeek | - | ✅ Sì |
+| `SYMBOL` | Simbolo CFD | XAUUSD | ❌ No |
+| `BROKER` | Broker | EIGHTCAP | ❌ No |
+| `INTERVAL` | Intervallo in minuti | 10 | ❌ No |
+| `RUN_ONCE` | Esecuzione singola | false | ❌ No |
 
-Variabile
-Descrizione
-Default
-Obbligatorio
-DEEPSEEK_API_KEY
-Chiave API DeepSeek
--
-✅ Sì
-SYMBOL
-Simbolo CFD
-XAUUSD
-❌ No
-BROKER
-Broker
-EIGHTCAP
-❌ No
-INTERVAL
-Intervallo in minuti
-10
-❌ No
-RUN_ONCE
-Esecuzione singola
-false
-❌ No
+## Utilizzo
 
+### Build dell'immagine
 
-Utilizzo
-
-Build dell'immagine
-
-Bash
-
-
+```bash
 docker compose build
+```
 
+### Avvio del bot (loop continuo)
 
-Avvio del bot (loop continuo)
-
-Bash
-
-
+```bash
 docker compose up -d
-
+```
 
 Il bot:
+- Si avvia in background
+- Cattura screenshot ogni 10 minuti (o l'intervallo configurato)
+- Chiede analisi a DeepSeek AI
+- Stampa i segnali di trading
+- ⚠️ **Le operazioni suggerite durano MASSIMO 5 MINUTI**
 
-•
-Si avvia in background
+### Visualizza i log
 
-•
-Cattura screenshot ogni 10 minuti (o l'intervallo configurato)
-
-•
-Chiede analisi a DeepSeek AI
-
-•
-Stampa i segnali di trading
-
-•
-⚠️ Le operazioni suggerite durano MASSIMO 5 MINUTI
-
-Visualizza i log
-
-Bash
-
-
+```bash
 # Log in tempo reale
 docker compose logs -f
 
 # Ultimi 100 log
 docker compose logs --tail=100
+```
 
-
-Esecuzione singola
+### Esecuzione singola
 
 Per una singola analisi invece del loop continuo:
 
-Bash
-
-
+```bash
 # Modifica .env
 RUN_ONCE=true
 
 # Avvia
 docker compose up
-
+```
 
 Oppure override diretto:
-
-Bash
-
-
+```bash
 docker compose run --rm -e RUN_ONCE=true trading-bot
+```
 
+### Stop del bot
 
-Stop del bot
-
-Bash
-
-
+```bash
 docker compose down
+```
 
+### Riavvio
 
-Riavvio
-
-Bash
-
-
+```bash
 docker compose restart
+```
 
+## Screenshot
 
-Screenshot
+Gli screenshot vengono salvati in `./screenshots/` sulla macchina host grazie al volume Docker.
 
-Gli screenshot vengono salvati in ./screenshots/ sulla macchina host grazie al volume Docker.
-
-Formato: YYYYMMDD_HHMMSS_timeframe.png
+Formato: `YYYYMMDD_HHMMSS_timeframe.png`
 
 Esempio:
-
-Plain Text
-
-
+```
 screenshots/
 ├── 20251120_143052_1min.png
 ├── 20251120_143052_15min.png
 └── 20251120_143052_60min.png
+```
 
+## Esempi di configurazione
 
-Esempi di configurazione
+### Analisi EUR/USD ogni 5 minuti
 
-Analisi EUR/USD ogni 5 minuti
-
-File .env:
-
-Bash
-
-
+File `.env`:
+```bash
 DEEPSEEK_API_KEY=sk-xxxxx
 SYMBOL=EURUSD
 BROKER=OANDA
 INTERVAL=5
+```
 
+### Analisi Bitcoin una sola volta
 
-Analisi Bitcoin una sola volta
-
-File .env:
-
-Bash
-
-
+File `.env`:
+```bash
 DEEPSEEK_API_KEY=sk-xxxxx
 SYMBOL=BTCUSD
 BROKER=BINANCE
 RUN_ONCE=true
+```
 
+### Analisi Gold con parametri custom
 
-Analisi Gold con parametri custom
-
-Bash
-
-
+```bash
 docker compose run --rm \
   -e DEEPSEEK_API_KEY=sk-xxxxx \
   -e SYMBOL=XAUUSD \
   -e BROKER=EIGHTCAP \
   -e INTERVAL=15 \
   trading-bot
+```
 
+## Troubleshooting
 
-Troubleshooting
-
-Container si ferma immediatamente
+### Container si ferma immediatamente
 
 Verifica i log:
-
-Bash
-
-
+```bash
 docker compose logs
+```
 
+Causa comune: `DEEPSEEK_API_KEY` non impostata.
 
-Causa comune: DEEPSEEK_API_KEY non impostata.
-
-Screenshot non vengono salvati
+### Screenshot non vengono salvati
 
 Verifica i permessi della directory:
-
-Bash
-
-
+```bash
 ls -la screenshots/
-
+```
 
 Se necessario:
-
-Bash
-
-
+```bash
 chmod 777 screenshots/
+```
 
-
-Errore "ChromeDriver not found"
+### Errore "ChromeDriver not found"
 
 Il Dockerfile include già ChromeDriver. Se l'errore persiste, ricostruisci l'immagine:
-
-Bash
-
-
+```bash
 docker compose build --no-cache
+```
 
+### Memoria insufficiente
 
-Memoria insufficiente
-
-Aumenta shm_size in docker-compose.yaml:
-
-YAML
-
-
+Aumenta `shm_size` in `docker-compose.yaml`:
+```yaml
 shm_size: '4gb'  # Aumenta da 2gb a 4gb
+```
 
-
-Container usa troppa CPU
+### Container usa troppa CPU
 
 Chrome headless può essere pesante. Considera:
+- Aumentare l'intervallo (`INTERVAL=15` o più)
+- Limitare le risorse Docker
 
-•
-Aumentare l'intervallo (INTERVAL=15 o più)
+## Comandi utili
 
-•
-Limitare le risorse Docker
-
-Comandi utili
-
-Bash
-
-
+```bash
 # Rebuild forzato
 docker compose build --no-cache
 
@@ -316,15 +225,13 @@ docker stats trading-bot
 
 # Esporta logs in file
 docker compose logs > bot_logs.txt
+```
 
-
-Aggiornamenti
+## Aggiornamenti
 
 Per aggiornare il bot:
 
-Bash
-
-
+```bash
 # Stop
 docker compose down
 
@@ -336,68 +243,59 @@ docker compose build
 
 # Restart
 docker compose up -d
+```
 
-
-Produzione
+## Produzione
 
 Per uso in produzione:
 
-1.
-Usa restart policy appropriato:
+1. **Usa restart policy appropriato**:
+   ```yaml
+   restart: always
+   ```
 
-2.
-Configura log rotation:
+2. **Configura log rotation**:
+   ```yaml
+   logging:
+     driver: "json-file"
+     options:
+       max-size: "50m"
+       max-file: "5"
+   ```
 
-3.
-Monitora il container:
+3. **Monitora il container**:
+   ```bash
+   docker compose ps
+   docker compose logs -f
+   ```
 
-4.
-Backup degli screenshot:
+4. **Backup degli screenshot**:
+   ```bash
+   tar -czf screenshots_backup_$(date +%Y%m%d).tar.gz screenshots/
+   ```
 
-Sicurezza
+## Sicurezza
 
-⚠️ IMPORTANTE:
+⚠️ **IMPORTANTE**:
 
-•
-Non committare il file .env su Git
+- Non committare il file `.env` su Git
+- Proteggi la chiave API DeepSeek
+- Limita l'accesso alla directory screenshots
+- Usa variabili d'ambiente sicure in produzione
 
-•
-Proteggi la chiave API DeepSeek
+## Note sulle operazioni a 5 minuti
 
-•
-Limita l'accesso alla directory screenshots
-
-•
-Usa variabili d'ambiente sicure in produzione
-
-Note sulle operazioni a 5 minuti
-
-Il bot è configurato per richiedere a DeepSeek AI operazioni che si chiudono entro massimo 5 minuti, indipendentemente dall'intervallo di richiesta del bot.
+Il bot è configurato per richiedere a DeepSeek AI operazioni che si chiudono entro **massimo 5 minuti**, indipendentemente dall'intervallo di richiesta del bot.
 
 Questo significa:
+- Se `INTERVAL=10`, il bot chiede analisi ogni 10 minuti
+- Ma ogni operazione suggerita deve chiudersi entro 5 minuti
+- Stop loss e take profit sono calibrati per operazioni ultra-brevi
+- Focus sul timeframe 1 minuto per il momentum immediato
 
-•
-Se INTERVAL=10, il bot chiede analisi ogni 10 minuti
-
-•
-Ma ogni operazione suggerita deve chiudersi entro 5 minuti
-
-•
-Stop loss e take profit sono calibrati per operazioni ultra-brevi
-
-•
-Focus sul timeframe 1 minuto per il momentum immediato
-
-Supporto
+## Supporto
 
 Per problemi o domande:
-
-•
-Controlla i log: docker compose logs
-
-•
-Verifica la configurazione: docker compose config
-
-•
-Consulta il README.md principale per dettagli sul bot
-
+- Controlla i log: `docker compose logs`
+- Verifica la configurazione: `docker compose config`
+- Consulta il README.md principale per dettagli sul bot
