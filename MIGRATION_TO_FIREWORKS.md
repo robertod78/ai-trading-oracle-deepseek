@@ -50,7 +50,7 @@ docker compose up -d
 
 1. **deepseek_analyzer.py**
    - Base URL: `https://api.fireworks.ai/inference/v1/chat/completions`
-   - Model: `accounts/fireworks/models/deepseek-v3`
+   - Model: `accounts/fireworks/models/qwen2-vl-7b-instruct` (Qwen2-VL 7B - vision model)
 
 2. **docker-compose.yaml**
    - Variabile: `FIREWORKS_API_KEY` invece di `DEEPSEEK_API_KEY`
