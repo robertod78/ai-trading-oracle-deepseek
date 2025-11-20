@@ -1,4 +1,4 @@
-# Trading Bot - Analisi automatica CFD con DeepSeek AI
+# AI Trading Oracle - Analisi automatica CFD con DeepSeek AI
 
 Software Python per l'analisi automatica di grafici CFD tramite screenshot di TradingView e intelligenza artificiale DeepSeek.
 
@@ -180,7 +180,7 @@ Per interrompere il bot in modalità loop continuo, premi `Ctrl+C`.
 ## Struttura del progetto
 
 ```
-trading_ai_bot/
+ai-trading-oracle-deepseek
 ├── trading_bot.py              # Programma principale
 ├── tradingview_scraper.py      # Modulo screenshot TradingView
 ├── deepseek_analyzer.py        # Modulo analisi DeepSeek AI
