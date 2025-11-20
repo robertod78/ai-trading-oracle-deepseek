@@ -139,7 +139,7 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             
             # Prepara la richiesta API con urllib
             payload = json.dumps({
-                "model": "accounts/fireworks/models/qwen2-vl-7b-instruct",
+                "model": "accounts/fireworks/models/qwen3-vl-30b-a3b-thinking",
                 "messages": self.conversation_history,
                 "temperature": 0.7,
                 "max_tokens": 2000,
@@ -160,7 +160,7 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             )
             
             # Chiamata API
-            print("Invio richiesta a Fireworks AI (DeepSeek V3)...")
+            print("Invio richiesta a Fireworks AI (Qwen3-VL 30B Thinking)...")
             with urllib.request.urlopen(req) as response:
                 response_data = json.loads(response.read().decode('utf-8'))
             
