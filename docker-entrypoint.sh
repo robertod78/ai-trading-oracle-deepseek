@@ -19,13 +19,15 @@ if [ -z "$DEEPSEEK_API_KEY" ]; then
     echo ""
 fi
 
-echo "🚀 Avvio Flask app con uvicorn (auto-reload attivo)..."
+echo "🚀 Avvio Flask app con Gunicorn (auto-reload attivo)..."
 echo ""
 
-# Avvia l'applicazione Flask con uvicorn e auto-reload
-exec uvicorn app:app \
-    --host 0.0.0.0 \
-    --port 5555 \
+# Avvia l'applicazione Flask con Gunicorn e auto-reload
+exec gunicorn app:app \
+    --bind 0.0.0.0:5555 \
     --reload \
-    --reload-dir /app \
+    --workers 1 \
+    --threads 2 \
+    --access-logfile - \
+    --error-logfile - \
     --log-level info
