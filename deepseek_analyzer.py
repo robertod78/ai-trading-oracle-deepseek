@@ -139,7 +139,7 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             
             # Prepara la richiesta API con urllib
             payload = json.dumps({
-                "model": "accounts/fireworks/models/deepseek-v3",
+                "model": "accounts/fireworks/models/qwen2-vl-7b-instruct",
                 "messages": self.conversation_history,
                 "temperature": 0.7,
                 "max_tokens": 2000,
