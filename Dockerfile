@@ -26,9 +26,11 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 RUN playwright install --with-deps chromium
 
 # Copia i file del progetto
+COPY app.py .
 COPY trading_bot.py .
 COPY tradingview_scraper.py .
 COPY deepseek_analyzer.py .
+COPY templates/ ./templates/
 
 # Crea directory per screenshots
 RUN mkdir -p /app/screenshots
@@ -47,6 +49,9 @@ RUN chmod +x docker-entrypoint.sh
 
 # Volume per persistenza screenshots
 VOLUME ["/app/screenshots"]
+
+# Esponi porta per interfaccia web
+EXPOSE 5555
 
 # Entrypoint
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

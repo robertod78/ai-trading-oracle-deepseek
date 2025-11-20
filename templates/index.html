@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trading Oracle - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .log-container {
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            height: calc(100vh - 350px);
+            min-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        /* Colori per diversi tipi di log */
+        .log-entry:has(.emoji-success) {
+            color: #4ade80;
+        }
+
+        .log-entry:has(.emoji-error) {
+            color: #f87171;
+        }
+
+        .log-entry:has(.emoji-warning) {
+            color: #fbbf24;
+        }
+
+        .log-entry:has(.emoji-info) {
+            color: #60a5fa;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .auto-scroll-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .auto-scroll-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .auto-scroll-toggle.active {
+            background: rgba(74, 222, 128, 0.3);
+            border-color: #4ade80;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 AI Trading Oracle</h1>
+            <p class="subtitle">DeepSeek Vision Analysis Dashboard</p>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-label">Status</div>
+                <div class="status-value">
+                    <span class="status-indicator"></span>
+                    <span id="status">Running</span>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Symbol</div>
+                <div class="status-value" id="symbol">-</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Broker</div>
+                <div class="status-value" id="broker">-</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Interval</div>
+                <div class="status-value"><span id="interval">-</span> min</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Last Update</div>
+                <div class="status-value" id="timestamp">-</div>
+            </div>
+        </div>
+
+        <div class="log-container" id="logContainer">
+            <div class="log-entry">Connessione al server...</div>
+        </div>
+
+        <button class="auto-scroll-toggle active" id="autoScrollToggle" onclick="toggleAutoScroll()">
+            📜 Auto-scroll: ON
+        </button>
+
+        <div class="footer">
+            AI Trading Oracle &copy; 2025 | Powered by DeepSeek Vision
+        </div>
+    </div>
+
+    <script>
+        let autoScroll = true;
+        const logContainer = document.getElementById('logContainer');
+        const autoScrollToggle = document.getElementById('autoScrollToggle');
+
+        // Connessione EventSource per log streaming
+        const eventSource = new EventSource('/logs');
+
+        eventSource.onmessage = function(event) {
+            if (event.data.trim()) {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                
+                // Identifica emoji per colorazione
+                const text = event.data;
+                if (text.includes('✅') || text.includes('✓')) {
+                    logEntry.innerHTML = '<span class="emoji-success"></span>' + escapeHtml(text);
+                } else if (text.includes('❌') || text.includes('ERROR')) {
+                    logEntry.innerHTML = '<span class="emoji-error"></span>' + escapeHtml(text);
+                } else if (text.includes('⚠️') || text.includes('WARNING')) {
+                    logEntry.innerHTML = '<span class="emoji-warning"></span>' + escapeHtml(text);
+                } else if (text.includes('🚀') || text.includes('📊') || text.includes('🔄')) {
+                    logEntry.innerHTML = '<span class="emoji-info"></span>' + escapeHtml(text);
+                } else {
+                    logEntry.textContent = text;
+                }
+                
+                logContainer.appendChild(logEntry);
+                
+                // Auto-scroll se attivo
+                if (autoScroll) {
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+                
+                // Mantieni solo gli ultimi 500 log
+                while (logContainer.children.length > 500) {
+                    logContainer.removeChild(logContainer.firstChild);
+                }
+            }
+        };
+
+        eventSource.onerror = function(error) {
+            console.error('EventSource error:', error);
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = '<span class="emoji-error"></span>❌ Connessione persa. Tentativo di riconnessione...';
+            logContainer.appendChild(logEntry);
+        };
+
+        // Aggiorna status bar ogni 5 secondi
+        function updateStatus() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('status').textContent = data.status === 'running' ? 'Running' : 'Stopped';
+                    document.getElementById('symbol').textContent = data.symbol;
+                    document.getElementById('broker').textContent = data.broker;
+                    document.getElementById('interval').textContent = data.interval;
+                    
+                    const timestamp = new Date(data.timestamp);
+                    document.getElementById('timestamp').textContent = timestamp.toLocaleTimeString();
+                })
+                .catch(error => console.error('Error fetching status:', error));
+        }
+
+        // Aggiorna status immediatamente e poi ogni 5 secondi
+        updateStatus();
+        setInterval(updateStatus, 5000);
+
+        // Toggle auto-scroll
+        function toggleAutoScroll() {
+            autoScroll = !autoScroll;
+            autoScrollToggle.classList.toggle('active');
+            autoScrollToggle.textContent = autoScroll ? '📜 Auto-scroll: ON' : '📜 Auto-scroll: OFF';
+        }
+
+        // Helper per escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Carica cronologia log all'avvio
+        fetch('/api/logs/history')
+            .then(response => response.json())
+            .then(data => {
+                logContainer.innerHTML = '';
+                data.logs.forEach(log => {
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'log-entry';
+                    logEntry.textContent = log;
+                    logContainer.appendChild(logEntry);
+                });
+                if (autoScroll) {
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+            })
+            .catch(error => console.error('Error loading log history:', error));
+    </script>
+</body>
+</html>

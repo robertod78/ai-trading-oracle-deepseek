@@ -1,37 +1,31 @@
 #!/bin/bash
-set -e
 
 echo "=========================================="
 echo "🤖 Trading Bot - Docker Container"
 echo "=========================================="
 echo ""
-
-# Verifica che la chiave API sia impostata
-if [ -z "$DEEPSEEK_API_KEY" ]; then
-    echo "❌ ERRORE: DEEPSEEK_API_KEY non impostata!"
-    echo ""
-    echo "Imposta la variabile d'ambiente nel file .env o docker-compose.yaml"
-    exit 1
-fi
-
 echo "✅ Configurazione:"
-echo "   - Simbolo: $SYMBOL"
-echo "   - Broker: $BROKER"
-echo "   - Intervallo: $INTERVAL minuti"
-echo "   - Directory screenshots: $SCREENSHOTS_DIR"
-echo "   - Modalità: $([ "$RUN_ONCE" = "true" ] && echo "Singola esecuzione" || echo "Loop continuo")"
+echo "   - Simbolo: ${SYMBOL}"
+echo "   - Broker: ${BROKER}"
+echo "   - Intervallo: ${INTERVAL} minuti"
+echo "   - Directory screenshots: ${SCREENSHOTS_DIR}"
+echo "   - Web Interface: http://localhost:5555"
 echo ""
 
-# Costruisci il comando
-CMD="python3 trading_bot.py --symbol $SYMBOL --broker $BROKER --interval $INTERVAL --screenshots-dir $SCREENSHOTS_DIR"
-
-# Aggiungi flag --once se richiesto
-if [ "$RUN_ONCE" = "true" ]; then
-    CMD="$CMD --once"
+# Verifica che la chiave API sia configurata
+if [ -z "$DEEPSEEK_API_KEY" ]; then
+    echo "⚠️  ATTENZIONE: DEEPSEEK_API_KEY non configurata!"
+    echo "   Il bot non potrà effettuare analisi AI."
+    echo ""
 fi
 
-echo "🚀 Avvio trading bot..."
+echo "🚀 Avvio Flask app con uvicorn (auto-reload attivo)..."
 echo ""
 
-# Esegui il bot
-exec $CMD
+# Avvia l'applicazione Flask con uvicorn e auto-reload
+exec uvicorn app:app \
+    --host 0.0.0.0 \
+    --port 5555 \
+    --reload \
+    --reload-dir /app \
+    --log-level info

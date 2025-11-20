@@ -17,9 +17,18 @@ services:
       - SCREENSHOTS_DIR=/app/screenshots
       - RUN_ONCE=${RUN_ONCE:-false}
     
-    # Volume per persistenza screenshots
+    # Porta per interfaccia web
+    ports:
+      - "5555:5555"
+    
+    # Volume mapping per modifiche live dei file Python
     volumes:
       - ./screenshots:/app/screenshots
+      - ./app.py:/app/app.py
+      - ./trading_bot.py:/app/trading_bot.py
+      - ./tradingview_scraper.py:/app/tradingview_scraper.py
+      - ./deepseek_analyzer.py:/app/deepseek_analyzer.py
+      - ./templates:/app/templates
     
     # Configurazione per Chrome headless
     shm_size: '2gb'
@@ -31,10 +40,10 @@ services:
         max-size: "10m"
         max-file: "3"
     
-    # Health check (opzionale)
+    # Health check - verifica che il server web risponda
     healthcheck:
-      test: ["CMD", "test", "-f", "/app/screenshots"]
-      interval: 5m
+      test: ["CMD", "curl", "-f", "http://localhost:5555/api/status"]
+      interval: 1m
       timeout: 10s
       retries: 3
       start_period: 30s
