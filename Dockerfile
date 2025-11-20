@@ -41,9 +41,6 @@ ENV INTERVAL="10"
 ENV SCREENSHOTS_DIR="/app/screenshots"
 ENV RUN_ONCE="false"
 
-# Variabili d'ambiente per Playwright
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-
 # Script di avvio
 COPY docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
