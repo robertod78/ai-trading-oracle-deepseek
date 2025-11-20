@@ -3,8 +3,9 @@ Modulo per analizzare grafici tramite DeepSeek API
 """
 import base64
 import json
-import requests
 from typing import Dict, List, Optional
+import urllib.request
+import urllib.parse
 
 
 class DeepSeekAnalyzer:
@@ -47,7 +48,7 @@ class DeepSeekAnalyzer:
 Prima di analizzare, DEVI calcolare mentalmente i seguenti indicatori tecnici basandoti sui dati di prezzo visibili nei grafici:
 
 1. **EMA 9 (Exponential Moving Average a 9 periodi)**:
-   - Calcola la media mobile esponenziale degli ultimi 9 periodi
+   - Calcola la media mobile esponenziale degli ultimi 9 periodis
    - Identifica se il prezzo è sopra o sotto l'EMA 9
    - Determina la direzione del trend (EMA in salita/discesa)
 
@@ -75,7 +76,7 @@ L'operazione deve essere a breve termine, con target e stop loss raggiungibili i
 
 Rispondi ESCLUSIVAMENTE in formato JSON con questa struttura esatta:
 {
-    "operazione": "Buy" o "Sell",
+    "operazione": "BUY" o "SELL",
     "lotto": numero decimale (considerando un conto di 1000 USD),
     "stop_loss": prezzo in formato decimale,
     "take_profit": prezzo in formato decimale,
@@ -104,7 +105,7 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             Dizionario con il segnale di trading o None se errore
         """
         try:
-            # Prepara il contenuto del messaggio
+            # Prepara il contenuto del messaggio - FORMATO OPENAI COMPATIBILE
             content = [
                 {
                     "type": "text",
@@ -112,13 +113,15 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
                 }
             ]
             
-            # Aggiungi le immagini nel formato corretto per DeepSeek
+            # Aggiungi le immagini nel FORMATO OPENAI (image_url)
             for timeframe in ["1min", "15min", "60min"]:
                 if timeframe in screenshots and screenshots[timeframe]:
                     image_base64 = self._encode_image(screenshots[timeframe])
                     content.append({
-                        "type": "image",
-                        "image": image_base64  # FORMATO CORRETTO per DeepSeek
+                        "type": "image_url",  # FORMATO CORRETTO
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_base64}"
+                        }
                     })
             
             if len(content) == 1:  # Solo testo, nessuna immagine
@@ -134,29 +137,33 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             # Aggiungi alla cronologia
             self.conversation_history.append(user_message)
             
-            # Prepara la richiesta API
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.api_key}"
-            }
-            
-            payload = {
-                "model": "deepseek-vision",  # MODELLO CORRETTO per immagini
+            # Prepara la richiesta API con urllib
+            payload = json.dumps({
+                "model": "deepseek-vision",
                 "messages": self.conversation_history,
                 "temperature": 0.7,
                 "max_tokens": 2000,
                 "stream": False
+            }).encode('utf-8')
+            
+            # Crea la richiesta
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {self.api_key}'
             }
+            
+            req = urllib.request.Request(
+                self.api_url,
+                data=payload,
+                headers=headers,
+                method='POST'
+            )
             
             # Chiamata API
             print("Invio richiesta a DeepSeek API...")
-            response = requests.post(self.api_url, headers=headers, json=payload)
+            with urllib.request.urlopen(req) as response:
+                response_data = json.loads(response.read().decode('utf-8'))
             
-            if response.status_code != 200:
-                print(f"Errore API: {response.status_code} - {response.text}")
-                return None
-            
-            response_data = response.json()
             assistant_message = response_data["choices"][0]["message"]["content"]
             
             # Aggiungi risposta alla cronologia
@@ -165,7 +172,7 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
                 "content": assistant_message
             })
             
-            # Mantieni solo gli ultimi 10 messaggi per evitare context troppo lungo
+            # Mantieni solo gli ultimi 10 messaggi
             if len(self.conversation_history) > 10:
                 self.conversation_history = self.conversation_history[-10:]
             
