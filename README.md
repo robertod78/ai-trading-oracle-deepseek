@@ -1,301 +1,232 @@
-# AI Trading Oracle (deepseek Version)
-Ai automatic signal generation based on TradinView screenshots and Deepseek  Evaluatios
+# Trading Bot - Analisi automatica CFD con DeepSeek AI
 
-# Trading Bot - Guida Docker
+Software Python per l'analisi automatica di grafici CFD tramite screenshot di TradingView e intelligenza artificiale DeepSeek.
 
-Questa guida spiega come eseguire il Trading Bot in un container Docker.
+## Caratteristiche
 
-## Prerequisiti
+Il bot cattura automaticamente screenshot di grafici TradingView su tre timeframe diversi:
+- **1 minuto**
+- **15 minuti**
+- **1 ora (60 minuti)**
 
-- Docker installato (versione 20.10 o superiore)
-- Docker Compose installato (versione 1.29 o superiore)
+Ogni 10 minuti (configurabile), il bot:
+1. Cattura screenshot dei grafici di trading
+2. Invia le immagini all'API DeepSeek per l'analisi
+3. Riceve un segnale di trading con:
+   - **Operazione**: Buy o Sell
+   - **Lotto**: dimensione della posizione (basata su conto da 1000 USD)
+   - **Stop Loss**: livello di stop loss
+   - **Take Profit**: livello di take profit
+   - **Spiegazione**: motivazioni tecniche della scelta
+
+## Requisiti
+
+- Python 3.11+
+- Chrome/Chromium browser
+- ChromeDriver
 - Chiave API DeepSeek
 
-## Installazione Docker
+### Dipendenze Python
 
-### Ubuntu/Debian
 ```bash
-# Installa Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-# Installa Docker Compose
-sudo apt-get install docker-compose-plugin
-
-# Aggiungi utente al gruppo docker (opzionale)
-sudo usermod -aG docker $USER
+sudo pip3 install selenium openai pillow
 ```
 
-### Verifica installazione
+## Installazione
+
+1. Clona o copia i file del progetto:
+   - `trading_bot.py` - Programma principale
+   - `tradingview_scraper.py` - Modulo per catturare screenshot
+   - `deepseek_analyzer.py` - Modulo per analisi AI
+
+2. Installa le dipendenze:
 ```bash
-docker --version
-docker compose version
+sudo pip3 install selenium openai pillow
+```
+
+3. Installa ChromeDriver (Ubuntu/Debian):
+```bash
+sudo apt-get install chromium-chromedriver
 ```
 
 ## Configurazione
 
-### 1. Crea il file .env
+### Chiave API DeepSeek
 
-Copia il template e modifica con i tuoi valori:
+Imposta la chiave API come variabile d'ambiente:
 
 ```bash
-cp .env.template .env
-nano .env
+export DEEPSEEK_API_KEY="la-tua-chiave-api"
 ```
 
-Inserisci almeno la chiave API:
-```bash
-DEEPSEEK_API_KEY=sk-la-tua-chiave-api
-```
+Oppure passala come parametro al comando (vedi sotto).
 
-### 2. Variabili d'ambiente disponibili
+### Indicatori Tecnici (Opzionale)
 
-| Variabile | Descrizione | Default | Obbligatorio |
-|-----------|-------------|---------|--------------|
-| `DEEPSEEK_API_KEY` | Chiave API DeepSeek | - | ✅ Sì |
-| `SYMBOL` | Simbolo CFD | XAUUSD | ❌ No |
-| `BROKER` | Broker | EIGHTCAP | ❌ No |
-| `INTERVAL` | Intervallo in minuti | 10 | ❌ No |
-| `RUN_ONCE` | Esecuzione singola | false | ❌ No |
+Il bot cattura i grafici così come appaiono su TradingView. Per avere gli indicatori EMA 9, MACD e RSI visibili negli screenshot, hai due opzioni:
+
+**Opzione A - Configurazione manuale (consigliata):**
+1. Apri TradingView e vai al simbolo desiderato (es. EIGHTCAP:XAUUSD)
+2. Aggiungi manualmente gli indicatori:
+   - Moving Average Exponential (EMA) con periodo 9
+   - MACD (impostazioni standard)
+   - RSI (impostazioni standard)
+3. Salva il layout come "default" o crea un template
+4. Il bot userà automaticamente questo layout
+
+**Opzione B - Analisi senza indicatori:**
+Il bot funziona anche senza indicatori visibili. DeepSeek AI è in grado di analizzare i grafici basandosi sulla price action (movimento dei prezzi) e può comunque fornire segnali di trading validi.
 
 ## Utilizzo
 
-### Build dell'immagine
+### Esecuzione base (loop continuo ogni 10 minuti)
 
 ```bash
-docker compose build
+python3 trading_bot.py --symbol XAUUSD --broker EIGHTCAP
 ```
 
-### Avvio del bot (loop continuo)
+### Esecuzione singola (una sola analisi)
 
 ```bash
-docker compose up -d
+python3 trading_bot.py --symbol XAUUSD --broker EIGHTCAP --once
 ```
 
-Il bot:
-- Si avvia in background
-- Cattura screenshot ogni 10 minuti (o l'intervallo configurato)
-- Chiede analisi a DeepSeek AI
-- Stampa i segnali di trading
-- ⚠️ **Le operazioni suggerite durano MASSIMO 5 MINUTI**
+### Parametri disponibili
 
-### Visualizza i log
+- `--symbol`: Simbolo CFD da analizzare (default: XAUUSD)
+- `--broker`: Broker (default: EIGHTCAP)
+- `--api-key`: Chiave API DeepSeek (alternativa alla variabile d'ambiente)
+- `--interval`: Intervallo in minuti tra le analisi (default: 10)
+- `--screenshots-dir`: Directory per salvare gli screenshot (default: screenshots)
+- `--once`: Esegui una sola analisi e termina
 
+### Esempi
+
+**Analisi di EUR/USD ogni 5 minuti:**
 ```bash
-# Log in tempo reale
-docker compose logs -f
-
-# Ultimi 100 log
-docker compose logs --tail=100
+python3 trading_bot.py --symbol EURUSD --broker OANDA --interval 5
 ```
 
-### Esecuzione singola
-
-Per una singola analisi invece del loop continuo:
-
+**Analisi singola con chiave API specificata:**
 ```bash
-# Modifica .env
-RUN_ONCE=true
-
-# Avvia
-docker compose up
+python3 trading_bot.py --symbol BTCUSD --api-key "sk-xxxxx" --once
 ```
 
-Oppure override diretto:
+**Salvare screenshot in directory personalizzata:**
 ```bash
-docker compose run --rm -e RUN_ONCE=true trading-bot
-```
-
-### Stop del bot
-
-```bash
-docker compose down
-```
-
-### Riavvio
-
-```bash
-docker compose restart
+python3 trading_bot.py --symbol XAUUSD --screenshots-dir /percorso/custom/screenshots
 ```
 
 ## Screenshot
 
-Gli screenshot vengono salvati in `./screenshots/` sulla macchina host grazie al volume Docker.
+Gli screenshot vengono salvati nella directory specificata (default: `screenshots/`) con il formato:
 
-Formato: `YYYYMMDD_HHMMSS_timeframe.png`
+```
+YYYYMMDD_HHMMSS_1min.png
+YYYYMMDD_HHMMSS_15min.png
+YYYYMMDD_HHMMSS_60min.png
+```
 
 Esempio:
+- `20251120_143052_1min.png` - Grafico 1 minuto catturato il 20/11/2025 alle 14:30:52
+- `20251120_143052_15min.png` - Grafico 15 minuti
+- `20251120_143052_60min.png` - Grafico 1 ora
+
+Questo permette di:
+- Vedere cronologicamente tutti gli screenshot catturati
+- Identificare facilmente data, ora e timeframe
+- Conservare uno storico completo delle analisi
+
+## Output
+
+Il bot stampa i segnali di trading ricevuti:
+
 ```
-screenshots/
-├── 20251120_143052_1min.png
-├── 20251120_143052_15min.png
-└── 20251120_143052_60min.png
+======================================================================
+📊 SEGNALE DI TRADING - 2025-11-20 14:30:52
+======================================================================
+
+🔔 Operazione:     BUY
+📦 Lotto:          0.05
+🛑 Stop Loss:      2025.50
+🎯 Take Profit:    2028.75
+
+💡 Spiegazione:
+   Il grafico mostra un trend rialzista confermato su tutti i timeframe.
+   L'analisi multi-timeframe indica momentum positivo con supporto forte
+   a livelli chiave. Operazione a basso rischio con R/R favorevole.
+
+======================================================================
 ```
 
-## Esempi di configurazione
+## Interruzione
 
-### Analisi EUR/USD ogni 5 minuti
+Per interrompere il bot in modalità loop continuo, premi `Ctrl+C`.
 
-File `.env`:
-```bash
-DEEPSEEK_API_KEY=sk-xxxxx
-SYMBOL=EURUSD
-BROKER=OANDA
-INTERVAL=5
+## Note importanti
+
+⚠️ **Disclaimer**: Questo software è fornito solo a scopo educativo e di ricerca. Il trading di CFD comporta rischi significativi di perdita del capitale. Non utilizzare questo bot per operazioni reali senza:
+- Una comprensione completa dei rischi del trading
+- Una validazione approfondita delle strategie
+- Un'adeguata gestione del rischio
+- Capitale che puoi permetterti di perdere
+
+⚠️ **Limitazioni tecniche**: 
+- TradingView potrebbe limitare l'accesso automatizzato
+- Gli indicatori potrebbero non essere sempre visibili negli screenshot
+- L'AI fornisce suggerimenti, non garanzie di profitto
+- I segnali devono essere sempre valutati criticamente
+
+## Struttura del progetto
+
 ```
-
-### Analisi Bitcoin una sola volta
-
-File `.env`:
-```bash
-DEEPSEEK_API_KEY=sk-xxxxx
-SYMBOL=BTCUSD
-BROKER=BINANCE
-RUN_ONCE=true
-```
-
-### Analisi Gold con parametri custom
-
-```bash
-docker compose run --rm \
-  -e DEEPSEEK_API_KEY=sk-xxxxx \
-  -e SYMBOL=XAUUSD \
-  -e BROKER=EIGHTCAP \
-  -e INTERVAL=15 \
-  trading-bot
+trading_ai_bot/
+├── trading_bot.py              # Programma principale
+├── tradingview_scraper.py      # Modulo screenshot TradingView
+├── deepseek_analyzer.py        # Modulo analisi DeepSeek AI
+├── README.md                   # Questo file
+├── GUIDA_RAPIDA.md            # Guida rapida
+├── .env.example               # Template configurazione
+├── start.sh                   # Script di avvio rapido
+└── screenshots/               # Directory screenshot (creata automaticamente)
+    ├── 20251120_143052_1min.png
+    ├── 20251120_143052_15min.png
+    └── 20251120_143052_60min.png
 ```
 
 ## Troubleshooting
 
-### Container si ferma immediatamente
-
-Verifica i log:
-```bash
-docker compose logs
-```
-
-Causa comune: `DEEPSEEK_API_KEY` non impostata.
-
-### Screenshot non vengono salvati
-
-Verifica i permessi della directory:
-```bash
-ls -la screenshots/
-```
-
-Se necessario:
-```bash
-chmod 777 screenshots/
-```
-
 ### Errore "ChromeDriver not found"
-
-Il Dockerfile include già ChromeDriver. Se l'errore persiste, ricostruisci l'immagine:
+Installa ChromeDriver:
 ```bash
-docker compose build --no-cache
+sudo apt-get install chromium-chromedriver
 ```
 
-### Memoria insufficiente
-
-Aumenta `shm_size` in `docker-compose.yaml`:
-```yaml
-shm_size: '4gb'  # Aumenta da 2gb a 4gb
-```
-
-### Container usa troppa CPU
-
-Chrome headless può essere pesante. Considera:
-- Aumentare l'intervallo (`INTERVAL=15` o più)
-- Limitare le risorse Docker
-
-## Comandi utili
-
+### Errore "API key not specified"
+Imposta la variabile d'ambiente:
 ```bash
-# Rebuild forzato
-docker compose build --no-cache
-
-# Rimuovi tutto (container, volumi, network)
-docker compose down -v
-
-# Accedi al container in esecuzione
-docker compose exec trading-bot bash
-
-# Visualizza risorse usate
-docker stats trading-bot
-
-# Esporta logs in file
-docker compose logs > bot_logs.txt
+export DEEPSEEK_API_KEY="la-tua-chiave-api"
 ```
 
-## Aggiornamenti
-
-Per aggiornare il bot:
-
-```bash
-# Stop
-docker compose down
-
-# Pull nuovi file (se da Git)
-git pull
-
-# Rebuild
-docker compose build
-
-# Restart
-docker compose up -d
+### Screenshot vuoti o neri
+Aumenta il tempo di attesa nel file `tradingview_scraper.py`:
+```python
+time.sleep(12)  # Aumenta da 10 a 12 secondi
 ```
 
-## Produzione
+### Gli indicatori non sono visibili
+Vedi la sezione "Indicatori Tecnici" sopra per le opzioni di configurazione.
 
-Per uso in produzione:
+### Errore di autenticazione TradingView
+TradingView potrebbe richiedere login per alcuni simboli. Considera di:
+- Usare simboli pubblicamente accessibili
+- Configurare un account TradingView
+- Aumentare i tempi di attesa per permettere caricamenti più lenti
 
-1. **Usa restart policy appropriato**:
-   ```yaml
-   restart: always
-   ```
+## Licenza
 
-2. **Configura log rotation**:
-   ```yaml
-   logging:
-     driver: "json-file"
-     options:
-       max-size: "50m"
-       max-file: "5"
-   ```
-
-3. **Monitora il container**:
-   ```bash
-   docker compose ps
-   docker compose logs -f
-   ```
-
-4. **Backup degli screenshot**:
-   ```bash
-   tar -czf screenshots_backup_$(date +%Y%m%d).tar.gz screenshots/
-   ```
-
-## Sicurezza
-
-⚠️ **IMPORTANTE**:
-
-- Non committare il file `.env` su Git
-- Proteggi la chiave API DeepSeek
-- Limita l'accesso alla directory screenshots
-- Usa variabili d'ambiente sicure in produzione
-
-## Note sulle operazioni a 5 minuti
-
-Il bot è configurato per richiedere a DeepSeek AI operazioni che si chiudono entro **massimo 5 minuti**, indipendentemente dall'intervallo di richiesta del bot.
-
-Questo significa:
-- Se `INTERVAL=10`, il bot chiede analisi ogni 10 minuti
-- Ma ogni operazione suggerita deve chiudersi entro 5 minuti
-- Stop loss e take profit sono calibrati per operazioni ultra-brevi
-- Focus sul timeframe 1 minuto per il momentum immediato
+Questo progetto è distribuito senza licenza specifica. Usalo a tuo rischio e pericolo.
 
 ## Supporto
 
-Per problemi o domande:
-- Controlla i log: `docker compose logs`
-- Verifica la configurazione: `docker compose config`
-- Consulta il README.md principale per dettagli sul bot
+Per problemi o domande, consulta la `GUIDA_RAPIDA.md` per istruzioni rapide.

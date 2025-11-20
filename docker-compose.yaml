@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  trading-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trading-bot
+    restart: unless-stopped
+    
+    # Variabili d'ambiente dal file .env
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - SYMBOL=${SYMBOL:-XAUUSD}
+      - BROKER=${BROKER:-EIGHTCAP}
+      - INTERVAL=${INTERVAL:-10}
+      - SCREENSHOTS_DIR=/app/screenshots
+      - RUN_ONCE=${RUN_ONCE:-false}
+    
+    # Volume per persistenza screenshots
+    volumes:
+      - ./screenshots:/app/screenshots
+    
+    # Configurazione per Chrome headless
+    shm_size: '2gb'
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Health check (opzionale)
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/screenshots"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# Network (opzionale, per future espansioni)
+networks:
+  default:
+    name: trading-bot-network
