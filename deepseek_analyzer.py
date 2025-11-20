@@ -3,7 +3,7 @@ Modulo per analizzare grafici tramite DeepSeek API
 """
 import base64
 import json
-from openai import OpenAI
+import requests
 from typing import Dict, List, Optional
 
 
@@ -17,10 +17,8 @@ class DeepSeekAnalyzer:
         Args:
             api_key: Chiave API di DeepSeek
         """
-        self.client = OpenAI(
-            api_key=api_key,
-            base_url="https://api.deepseek.com"
-        )
+        self.api_key = api_key
+        self.api_url = "https://api.deepseek.com/v1/chat/completions"
         self.conversation_history = []
         
     def _encode_image(self, image_path: str) -> str:
@@ -106,48 +104,60 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             Dizionario con il segnale di trading o None se errore
         """
         try:
-            # Prepara le immagini
-            images_content = []
+            # Prepara il contenuto del messaggio
+            content = [
+                {
+                    "type": "text",
+                    "text": self._create_analysis_prompt()
+                }
+            ]
             
+            # Aggiungi le immagini nel formato corretto per DeepSeek
             for timeframe in ["1min", "15min", "60min"]:
                 if timeframe in screenshots and screenshots[timeframe]:
                     image_base64 = self._encode_image(screenshots[timeframe])
-                    images_content.append({
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{image_base64}"
-                        }
+                    content.append({
+                        "type": "image",
+                        "image": image_base64  # FORMATO CORRETTO per DeepSeek
                     })
             
-            if not images_content:
+            if len(content) == 1:  # Solo testo, nessuna immagine
                 print("Nessuna immagine disponibile per l'analisi")
                 return None
             
             # Crea il messaggio con le immagini
             user_message = {
                 "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": self._create_analysis_prompt()
-                    }
-                ] + images_content
+                "content": content
             }
             
             # Aggiungi alla cronologia
             self.conversation_history.append(user_message)
             
+            # Prepara la richiesta API
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_key}"
+            }
+            
+            payload = {
+                "model": "deepseek-vision",  # MODELLO CORRETTO per immagini
+                "messages": self.conversation_history,
+                "temperature": 0.7,
+                "max_tokens": 2000,
+                "stream": False
+            }
+            
             # Chiamata API
             print("Invio richiesta a DeepSeek API...")
-            response = self.client.chat.completions.create(
-                model="deepseek-chat",
-                messages=self.conversation_history,
-                temperature=0.7,
-                max_tokens=1000
-            )
+            response = requests.post(self.api_url, headers=headers, json=payload)
             
-            # Estrai la risposta
-            assistant_message = response.choices[0].message.content
+            if response.status_code != 200:
+                print(f"Errore API: {response.status_code} - {response.text}")
+                return None
+            
+            response_data = response.json()
+            assistant_message = response_data["choices"][0]["message"]["content"]
             
             # Aggiungi risposta alla cronologia
             self.conversation_history.append({
@@ -160,14 +170,17 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
                 self.conversation_history = self.conversation_history[-10:]
             
             # Parse JSON dalla risposta
-            # Rimuovi eventuali markdown code blocks
             json_text = assistant_message.strip()
+            
+            # Rimuovi eventuali markdown code blocks
             if json_text.startswith("```json"):
                 json_text = json_text[7:]
-            if json_text.startswith("```"):
+            elif json_text.startswith("```"):
                 json_text = json_text[3:]
+            
             if json_text.endswith("```"):
                 json_text = json_text[:-3]
+            
             json_text = json_text.strip()
             
             signal = json.loads(json_text)
@@ -213,5 +226,5 @@ if __name__ == "__main__":
     if signal:
         print("\nSegnale di trading ricevuto:")
         print(json.dumps(signal, indent=2, ensure_ascii=False))
-
-
+    else:
+        print("Nessun segnale ricevuto o errore nell'analisi")
