@@ -114,14 +114,14 @@ def run_bot():
     global bot_running
     
     # Parametri dal environment
-    api_key = os.getenv("DEEPSEEK_API_KEY", "")
+    api_key = os.getenv("FIREWORKS_API_KEY", "")
     symbol = os.getenv("SYMBOL", "XAUUSD")
     broker = os.getenv("BROKER", "EIGHTCAP")
     interval = int(os.getenv("INTERVAL", "10"))
     screenshots_dir = os.getenv("SCREENSHOTS_DIR", "/app/screenshots")
     
     if not api_key:
-        log_message("❌ ERRORE: DEEPSEEK_API_KEY non configurata!")
+        log_message("❌ ERRORE: FIREWORKS_API_KEY non configurata!")
         return
     
     log_message("="*70)

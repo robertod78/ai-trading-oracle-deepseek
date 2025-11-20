@@ -10,7 +10,7 @@ services:
     
     # Variabili d'ambiente dal file .env
     environment:
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - FIREWORKS_API_KEY=${FIREWORKS_API_KEY}
       - SYMBOL=${SYMBOL:-XAUUSD}
       - BROKER=${BROKER:-EIGHTCAP}
       - INTERVAL=${INTERVAL:-10}

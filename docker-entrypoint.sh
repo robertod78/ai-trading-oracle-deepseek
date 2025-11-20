@@ -13,8 +13,8 @@ echo "   - Web Interface: http://localhost:5555"
 echo ""
 
 # Verifica che la chiave API sia configurata
-if [ -z "$DEEPSEEK_API_KEY" ]; then
-    echo "⚠️  ATTENZIONE: DEEPSEEK_API_KEY non configurata!"
+if [ -z "$FIREWORKS_API_KEY" ]; then
+    echo "⚠️  ATTENZIONE: FIREWORKS_API_KEY non configurata!"
     echo "   Il bot non potrà effettuare analisi AI."
     echo ""
 fi

@@ -9,17 +9,17 @@ import urllib.parse
 
 
 class DeepSeekAnalyzer:
-    """Classe per analizzare grafici di trading tramite DeepSeek API"""
+    """Classe per analizzare grafici di trading tramite Fireworks AI + DeepSeek V3"""
     
     def __init__(self, api_key: str):
         """
         Inizializza l'analyzer
         
         Args:
-            api_key: Chiave API di DeepSeek
+            api_key: Chiave API di Fireworks AI
         """
         self.api_key = api_key
-        self.api_url = "https://api.deepseek.com/v1/chat/completions"
+        self.api_url = "https://api.fireworks.ai/inference/v1/chat/completions"
         self.conversation_history = []
         
     def _encode_image(self, image_path: str) -> str:
@@ -139,7 +139,7 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             
             # Prepara la richiesta API con urllib
             payload = json.dumps({
-                "model": "deepseek-vision",
+                "model": "accounts/fireworks/models/deepseek-v3",
                 "messages": self.conversation_history,
                 "temperature": 0.7,
                 "max_tokens": 2000,
@@ -160,7 +160,7 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             )
             
             # Chiamata API
-            print("Invio richiesta a DeepSeek API...")
+            print("Invio richiesta a Fireworks AI (DeepSeek V3)...")
             with urllib.request.urlopen(req) as response:
                 response_data = json.loads(response.read().decode('utf-8'))
             
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     # Test del modulo
     import os
     
-    api_key = os.getenv("DEEPSEEK_API_KEY", "your-api-key-here")
+    api_key = os.getenv("FIREWORKS_API_KEY", "your-api-key-here")
     analyzer = DeepSeekAnalyzer(api_key)
     
     # Test con screenshot fittizi

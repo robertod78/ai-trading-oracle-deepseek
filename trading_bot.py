@@ -115,7 +115,7 @@ def main():
         "--api-key",
         type=str,
         default=None,
-        help="Chiave API DeepSeek (se non specificata, usa variabile d'ambiente DEEPSEEK_API_KEY)"
+        help="Chiave API Fireworks AI (se non specificata, usa variabile d'ambiente FIREWORKS_API_KEY)"
     )
     parser.add_argument(
         "--interval",
@@ -138,10 +138,10 @@ def main():
     args = parser.parse_args()
     
     # Ottieni API key
-    api_key = args.api_key or os.getenv("DEEPSEEK_API_KEY")
+    api_key = args.api_key or os.getenv("FIREWORKS_API_KEY")
     if not api_key:
-        print("❌ Errore: Chiave API DeepSeek non specificata")
-        print("   Usa --api-key oppure imposta la variabile d'ambiente DEEPSEEK_API_KEY")
+        print("❌ Errore: Chiave API Fireworks AI non specificata")
+        print("   Usa --api-key oppure imposta la variabile d'ambiente FIREWORKS_API_KEY")
         sys.exit(1)
     
     print("="*70)
