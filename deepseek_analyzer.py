@@ -4,7 +4,9 @@ DeepSeek Analyzer - Analisi grafici tramite Fireworks AI (Qwen3-VL 235B Instruct
 """
 import base64
 import json
+import time
 import urllib.request
+import urllib.error
 from typing import Dict, Optional
 
 
@@ -217,12 +219,41 @@ Rispondi SOLO con il JSON, niente altro."""
                 method='POST'
             )
             
-            # Chiamata API
-            print("Invio richiesta a Fireworks AI (Qwen3-VL 235B)...")
-            with urllib.request.urlopen(req) as response:
-                response_data = json.loads(response.read().decode('utf-8'))
+            # Chiamata API con retry automatico
+            max_retries = 3
+            retry_delay = 2  # secondi
             
-            assistant_message = response_data["choices"][0]["message"]["content"]
+            for attempt in range(max_retries):
+                try:
+                    if attempt > 0:
+                        print(f"Tentativo {attempt + 1}/{max_retries}...")
+                    else:
+                        print("Invio richiesta a Fireworks AI (Qwen3-VL 235B)...")
+                    
+                    with urllib.request.urlopen(req, timeout=60) as response:
+                        response_data = json.loads(response.read().decode('utf-8'))
+                    
+                    assistant_message = response_data["choices"][0]["message"]["content"]
+                    break  # Successo, esci dal loop
+                    
+                except urllib.error.HTTPError as e:
+                    if e.code == 503 and attempt < max_retries - 1:
+                        # Service Unavailable - riprova
+                        wait_time = retry_delay * (2 ** attempt)  # backoff esponenziale
+                        print(f"⚠️  Servizio temporaneamente non disponibile (503)")
+                        print(f"   Riprovo tra {wait_time} secondi...")
+                        time.sleep(wait_time)
+                    else:
+                        # Altro errore HTTP o ultimo tentativo fallito
+                        raise
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        wait_time = retry_delay * (2 ** attempt)
+                        print(f"⚠️  Errore: {e}")
+                        print(f"   Riprovo tra {wait_time} secondi...")
+                        time.sleep(wait_time)
+                    else:
+                        raise
             
             # Aggiungi risposta alla cronologia
             self.conversation_history.append({
