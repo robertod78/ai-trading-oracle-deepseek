@@ -151,9 +151,9 @@ class TradingViewScraper:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         timeframes = {
-            "1min": 1,
+            "60min": 60,
             "15min": 15,
-            "60min": 60
+            "1min": 1
         }
         
         screenshots = {}
