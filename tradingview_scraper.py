@@ -228,19 +228,55 @@ class TradingViewScraper:
         
         # Estrai prezzo corrente dalla pagina
         current_price = None
+        print("\n🔍 Estrazione prezzo corrente...")
+        
         try:
-            # Cerca il prezzo nella pagina (elemento con classe che contiene il prezzo)
-            price_element = self.page.locator('[class*="last-"]').first
-            if price_element:
-                price_text = price_element.text_content()
-                # Estrai solo i numeri e il punto decimale
-                import re
-                price_match = re.search(r'([0-9,]+\.?[0-9]*)', price_text.replace(',', ''))
-                if price_match:
-                    current_price = float(price_match.group(1))
-                    print(f"\n💰 Prezzo corrente estratto: {current_price}")
+            import re
+            
+            # Prova diversi selettori
+            selectors = [
+                '[class*="last-"]',
+                '[class*="price-"]',
+                '[class*="lastPrice"]',
+                '.tv-symbol-price-quote__value',
+                '[data-name="legend-source-item"]'
+            ]
+            
+            for selector in selectors:
+                try:
+                    elements = self.page.locator(selector).all()
+                    print(f"   Tentativo con selettore: {selector} - Trovati {len(elements)} elementi")
+                    
+                    for element in elements[:5]:  # Controlla i primi 5
+                        text = element.text_content()
+                        if text:
+                            # Cerca pattern di prezzo
+                            price_match = re.search(r'([0-9]{1,5}[,\.]?[0-9]{1,3}\.?[0-9]{0,2})', text.replace(',', '').replace(' ', ''))
+                            if price_match:
+                                try:
+                                    price_value = float(price_match.group(1))
+                                    # Valida che sia un prezzo ragionevole per XAUUSD (1000-10000)
+                                    if 1000 <= price_value <= 10000:
+                                        current_price = price_value
+                                        print(f"   ✅ Prezzo trovato: {current_price} (selettore: {selector})")
+                                        break
+                                except ValueError:
+                                    continue
+                    
+                    if current_price:
+                        break
+                        
+                except Exception as e:
+                    print(f"   ⚠️  Errore con selettore {selector}: {e}")
+                    continue
+            
+            if current_price:
+                print(f"\n💰 Prezzo corrente estratto: {current_price}")
+            else:
+                print(f"\n⚠️  Nessun prezzo trovato con i selettori disponibili")
+                
         except Exception as e:
-            print(f"\n⚠️  Impossibile estrarre prezzo corrente: {e}")
+            print(f"\n⚠️  Errore durante estrazione prezzo: {e}")
         
         print("="*70)
         print()

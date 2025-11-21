@@ -34,7 +34,7 @@ def print_signal(signal: dict):
 
 
 def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str, 
-                       screenshots_dir: str = "screenshots"):
+                       screenshots_dir: str = "screenshots", scraper: TradingViewScraper = None):
     """
     Esegue un ciclo completo di analisi
     
@@ -43,6 +43,7 @@ def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str,
         broker: Broker (es. EIGHTCAP)
         deepseek_api_key: Chiave API DeepSeek
         screenshots_dir: Directory per salvare gli screenshot
+        scraper: Istanza TradingViewScraper riutilizzabile (opzionale)
     
     Returns:
         True se successo, False altrimenti
@@ -51,8 +52,11 @@ def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str,
     print(f"   Simbolo: {symbol}")
     print(f"   Broker: {broker}")
     
-    # Inizializza scraper
-    scraper = TradingViewScraper(symbol=symbol, broker=broker)
+    # Inizializza scraper solo se non fornito
+    scraper_created = False
+    if scraper is None:
+        scraper = TradingViewScraper(symbol=symbol, broker=broker)
+        scraper_created = True
     
     try:
         # Cattura screenshot ed estrai prezzo corrente
@@ -95,7 +99,9 @@ def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str,
         print(f"❌ Errore durante il ciclo di analisi: {e}")
         return False
     finally:
-        scraper.close()
+        # Chiudi scraper solo se creato localmente
+        if scraper_created:
+            scraper.close()
 
 
 def main():
@@ -177,6 +183,10 @@ def main():
         
         cycle_count = 0
         
+        # Crea scraper persistente per mantenere la cache
+        persistent_scraper = TradingViewScraper(symbol=args.symbol, broker=args.broker)
+        print("💾 Scraper persistente creato (cache 1H attiva)\n")
+        
         try:
             while True:
                 cycle_count += 1
@@ -188,7 +198,8 @@ def main():
                     symbol=args.symbol,
                     broker=args.broker,
                     deepseek_api_key=api_key,
-                    screenshots_dir=args.screenshots_dir
+                    screenshots_dir=args.screenshots_dir,
+                    scraper=persistent_scraper  # ← Passa lo scraper persistente
                 )
                 
                 if success:
@@ -209,6 +220,10 @@ def main():
             print("\n\n⏹️  Bot interrotto dall'utente")
             print(f"   Cicli completati: {cycle_count}")
             print("\n👋 Arrivederci!\n")
+        finally:
+            # Chiudi lo scraper persistente
+            print("💾 Chiusura scraper persistente...")
+            persistent_scraper.close()
             sys.exit(0)
 
 

@@ -62,14 +62,17 @@ def print_signal(signal: dict):
     log_message("\n" + "="*70 + "\n")
 
 def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str, 
-                       screenshots_dir: str = "screenshots"):
+                       screenshots_dir: str = "screenshots", scraper: TradingViewScraper = None):
     """Esegue un ciclo completo di analisi"""
     log_message(f"\n🚀 Avvio ciclo di analisi - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     log_message(f"   Simbolo: {symbol}")
     log_message(f"   Broker: {broker}")
     
-    # Inizializza scraper
-    scraper = TradingViewScraper(symbol=symbol, broker=broker)
+    # Inizializza scraper solo se non fornito
+    scraper_created = False
+    if scraper is None:
+        scraper = TradingViewScraper(symbol=symbol, broker=broker)
+        scraper_created = True
     
     try:
         # Cattura screenshot ed estrai prezzo corrente
@@ -114,7 +117,9 @@ def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str,
         log_message(f"❌ Errore durante il ciclo di analisi: {e}")
         return False
     finally:
-        scraper.close()
+        # Chiudi scraper solo se creato localmente
+        if scraper_created:
+            scraper.close()
 
 def run_bot():
     """Esegue il bot in un thread separato"""
@@ -141,6 +146,10 @@ def run_bot():
     log_message(f"  - Directory screenshots: {screenshots_dir}")
     log_message("")
     
+    # Crea scraper persistente per mantenere la cache
+    persistent_scraper = TradingViewScraper(symbol=symbol, broker=broker)
+    log_message("💾 Scraper persistente creato (cache 1H attiva)\n")
+    
     bot_running = True
     cycle = 0
     
@@ -154,7 +163,7 @@ def run_bot():
         
         try:
             # Esegui ciclo di analisi
-            success = run_analysis_cycle(symbol, broker, api_key, screenshots_dir)
+            success = run_analysis_cycle(symbol, broker, api_key, screenshots_dir, scraper=persistent_scraper)
             
             if success:
                 log_message("✅ Ciclo completato con successo")
