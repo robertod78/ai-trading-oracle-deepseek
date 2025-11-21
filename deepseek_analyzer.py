@@ -47,9 +47,10 @@ class DeepSeekAnalyzer:
 📊 FASE 1 - CALCOLO INDICATORI:
 Prima di analizzare, DEVI calcolare mentalmente i seguenti indicatori tecnici basandoti sui dati di prezzo visibili nei grafici:
 
-1. **EMA 9 (Exponential Moving Average a 9 periodi)**:
-   - Calcola la media mobile esponenziale degli ultimi 9 periodis
-   - Identifica se il prezzo è sopra o sotto l'EMA 9
+1. **EMA 9 e EMA 20 (Exponential Moving Average)**:
+   - Calcola EMA 9 e EMA 20 per identificare trend di breve e medio termine
+   - Identifica se il prezzo è sopra o sotto entrambe le EMA
+   - Verifica crossover tra EMA 9 e EMA 20 (segnale di cambio trend)
    - Determina la direzione del trend (EMA in salita/discesa)
 
 2. **MACD (Moving Average Convergence Divergence)**:
@@ -80,14 +81,14 @@ Rispondi ESCLUSIVAMENTE in formato JSON con questa struttura esatta:
     "lotto": numero decimale (considerando un conto di 1000 USD),
     "stop_loss": prezzo in formato decimale,
     "take_profit": prezzo in formato decimale,
-    "spiegazione": "Spiegazione dettagliata che DEVE includere: 1) Valori calcolati di EMA 9, MACD e RSI sui 3 timeframe, 2) Analisi price action, 3) Motivi della scelta operativa"
+    "spiegazione": "Spiegazione dettagliata che DEVE includere: 1) Valori calcolati di EMA 9, EMA 20, MACD e RSI sui 3 timeframe, 2) Analisi price action, 3) Motivi della scelta operativa"
 }
 
 Criteri OBBLIGATORI per operazioni a 5 minuti:
-- Stop Loss: minimo 15-20 pips per XAUUSD (range AMPIO per evitare noise e operazioni già passate)
-- Take Profit: DEVE essere esattamente il DOPPIO dello Stop Loss (Risk/Reward ratio 1:2)
-  Esempio: se SL = 20 pips, allora TP = 40 pips
-- Range totale operazione: 35-60 pips (SL + TP), sufficientemente ampio per 5 minuti
+- Stop Loss: MASSIMO 20 pips per XAUUSD (range contenuto ma non troppo stretto)
+- Take Profit: MINIMO 20 pips (Risk/Reward ratio minimo 1:1, preferibile 1:2)
+  Esempio: se SL = 10 pips, allora TP = 20-30 pips (R/R 1:2 o 1:3)
+- Range contenuto ma efficace per operazioni veloci a 5 minuti
 - Focus su timeframe 15 minuti per trend principale, confermato da 60 minuti
 - Timeframe 1 minuto per timing preciso dell'entrata e momentum immediato
 
@@ -141,7 +142,7 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             
             # Prepara la richiesta API con urllib
             payload = json.dumps({
-                "model": "accounts/fireworks/models/qwen2p5-vl-32b-instruct",
+                "model": "accounts/fireworks/models/qwen3-vl-235b-a22b-instruct",
                 "messages": self.conversation_history,
                 "temperature": 0.7,
                 "max_tokens": 2000,
@@ -162,7 +163,7 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             )
             
             # Chiamata API
-            print("Invio richiesta a Fireworks AI (Qwen2.5-VL 32B)...")
+            print("Invio richiesta a Fireworks AI (Qwen3-VL 235B)...")
             with urllib.request.urlopen(req) as response:
                 response_data = json.loads(response.read().decode('utf-8'))
             
