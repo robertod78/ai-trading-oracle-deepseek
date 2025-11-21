@@ -25,6 +25,10 @@ class TradingViewScraper:
         self.browser = None
         self.page = None
         
+        # Cache per screenshot 1H
+        self.cached_1h_screenshot = None
+        self.cached_1h_hour = None  # Ora dell'ultimo screenshot 1H
+        
     def _init_browser(self):
         """Inizializza Playwright e il browser"""
         self.playwright = sync_playwright().start()
@@ -150,7 +154,9 @@ class TradingViewScraper:
         """
         os.makedirs(output_dir, exist_ok=True)
         
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d_%H%M%S")
+        current_hour = now.hour
         
         timeframes = {
             "60min": 60,
@@ -161,7 +167,7 @@ class TradingViewScraper:
         screenshots = {}
         
         print("="*70)
-        print(f"🚀 CATTURA SCREENSHOT - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"🚀 CATTURA SCREENSHOT - {now.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"   Simbolo: {self.broker}:{self.symbol}")
         print(f"   Indicatori: EMA 9, MACD, RSI (pre-caricati)")
         print(f"   Engine: Playwright (stabile e affidabile)")
@@ -172,10 +178,28 @@ class TradingViewScraper:
             print(f"[{i}/3] " + "━"*50)
             print(f"📊 Timeframe {tf_name}")
             
+            # Logica di caching per 60min
+            if tf_name == "60min":
+                # Controlla se abbiamo già uno screenshot della stessa ora
+                if self.cached_1h_screenshot and self.cached_1h_hour == current_hour:
+                    print(f"   💾 Riutilizzo screenshot 1H della stessa ora (cache)")
+                    screenshots[tf_name] = self.cached_1h_screenshot
+                    print(f"   ✅ Screenshot riutilizzato: {self.cached_1h_screenshot}")
+                    print()
+                    continue
+                else:
+                    print(f"   🆕 Nuova ora rilevata, cattura nuovo screenshot 1H")
+            
             output_path = os.path.join(output_dir, f"{timestamp}_{tf_name}.png")
             
             success = self.capture_screenshot(tf_value, output_path)
             screenshots[tf_name] = output_path if success else None
+            
+            # Salva in cache se è 60min e ha avuto successo
+            if tf_name == "60min" and success:
+                self.cached_1h_screenshot = output_path
+                self.cached_1h_hour = current_hour
+                print(f"   💾 Screenshot 1H salvato in cache (ora: {current_hour:02d}:xx)")
             
             print()
         
@@ -189,9 +213,17 @@ class TradingViewScraper:
         for tf_name, path in screenshots.items():
             status = "✅" if path else "❌"
             path_str = path if path else "ERRORE"
-            print(f"   {status} {tf_name:5s} : {path_str}")
+            
+            # Indica se è da cache
+            cache_indicator = ""
+            if tf_name == "60min" and path == self.cached_1h_screenshot and self.cached_1h_hour == current_hour:
+                cache_indicator = " 💾 (cache)"
+            
+            print(f"   {status} {tf_name:5s} : {path_str}{cache_indicator}")
         
         print(f"\n   Successo: {success_count}/3")
+        if self.cached_1h_screenshot and self.cached_1h_hour == current_hour:
+            print(f"   💾 Screenshot 1H da cache (ora: {current_hour:02d}:xx)")
         print("="*70)
         
         # Estrai prezzo corrente dalla pagina
