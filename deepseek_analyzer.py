@@ -78,13 +78,17 @@ L'operazione DEVE essere SEMPRE PRO-TREND basandoti sul timeframe 1 minuto:
 - Se il trend a 1 minuto è RIBASSISTA (prezzo sotto EMA, MACD negativo) → SOLO SELL
 - MAI operare contro il trend del timeframe 1 minuto
 
-Rispondi ESCLUSIVAMENTE in formato JSON con questa struttura esatta:
+⚠️ FORMATO RISPOSTA OBBLIGATORIO:
+Devi rispondere SOLO ed ESCLUSIVAMENTE con un oggetto JSON valido.
+NO markdown, NO ```json, NO testo prima o dopo, NO emoji nel JSON.
+SOLO il JSON puro con questa struttura esatta:
+
 {
-    "operazione": "BUY" o "SELL",
-    "lotto": numero decimale (considerando un conto di 1000 USD),
-    "stop_loss": prezzo in formato decimale,
-    "take_profit": prezzo in formato decimale,
-    "spiegazione": "Spiegazione dettagliata che DEVE includere: 1) Valori calcolati di EMA 9, EMA 20, MACD e RSI sui 3 timeframe, 2) Analisi price action, 3) Motivi della scelta operativa"
+    "operazione": "BUY",
+    "lotto": 0.01,
+    "stop_loss": 2650.50,
+    "take_profit": 2655.75,
+    "spiegazione": "Testo dettagliato qui"
 }
 
 Criteri OBBLIGATORI per operazioni a 5 minuti:
@@ -99,7 +103,9 @@ Criteri OBBLIGATORI per operazioni a 5 minuti:
 - Timeframe 15 e 60 minuti: CONFERMANO il trend generale
 - MAI contro trend: se 1min è rialzista → SOLO BUY, se ribassista → SOLO SELL
 
-Rispondi SOLO con il JSON, senza testo aggiuntivo."""
+🚨 IMPORTANTE: La tua risposta DEVE iniziare con { e finire con }
+NO testo prima del JSON, NO testo dopo il JSON, NO code blocks.
+SOLO JSON PURO E VALIDO."""
 
         return prompt
     
@@ -194,19 +200,26 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
             if len(self.conversation_history) > 10:
                 self.conversation_history = self.conversation_history[-10:]
             
-            # Parse JSON dalla risposta
+            # Parse JSON dalla risposta - gestione robusta
             json_text = assistant_message.strip()
             
             # Rimuovi eventuali markdown code blocks
-            if json_text.startswith("```json"):
-                json_text = json_text[7:]
-            elif json_text.startswith("```"):
-                json_text = json_text[3:]
+            if "```json" in json_text:
+                json_text = json_text.split("```json")[1].split("```")[0]
+            elif "```" in json_text:
+                json_text = json_text.split("```")[1].split("```")[0]
             
-            if json_text.endswith("```"):
-                json_text = json_text[:-3]
+            # Cerca il JSON nella risposta (trova { e } più esterni)
+            start_idx = json_text.find('{')
+            end_idx = json_text.rfind('}')
+            
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                json_text = json_text[start_idx:end_idx+1]
             
             json_text = json_text.strip()
+            
+            # Debug: mostra il JSON estratto
+            print(f"JSON estratto per parsing: {json_text[:200]}...")
             
             signal = json.loads(json_text)
             
