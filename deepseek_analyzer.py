@@ -73,7 +73,10 @@ Dopo aver calcolato gli indicatori, analizza:
 - Volatilità e spread attuali
 
 ⚠️ IMPORTANTE: Devi fornire un segnale di trading che si chiuderà ENTRO UN MASSIMO DI 5 MINUTI.
-L'operazione deve essere veloce e precisa con range contenuto (10-15 pips totali).
+L'operazione DEVE essere SEMPRE PRO-TREND basandoti sul timeframe 1 minuto:
+- Se il trend a 1 minuto è RIALZISTA (prezzo sopra EMA, MACD positivo) → SOLO BUY
+- Se il trend a 1 minuto è RIBASSISTA (prezzo sotto EMA, MACD negativo) → SOLO SELL
+- MAI operare contro il trend del timeframe 1 minuto
 
 Rispondi ESCLUSIVAMENTE in formato JSON con questa struttura esatta:
 {
@@ -85,12 +88,16 @@ Rispondi ESCLUSIVAMENTE in formato JSON con questa struttura esatta:
 }
 
 Criteri OBBLIGATORI per operazioni a 5 minuti:
-- Stop Loss: MASSIMO 5-6 pips per XAUUSD (range stretto per scalping veloce)
-- Take Profit: MINIMO 10-12 pips (Risk/Reward ratio 1:2)
-  Esempio: se SL = 5 pips, allora TP = 10 pips (R/R 1:2)
-- Range totale: 15-18 pips massimo (operazione ultra-veloce)
-- Focus su timeframe 15 minuti per trend principale, confermato da 60 minuti
-- Timeframe 1 minuto per timing preciso dell'entrata e momentum immediato
+- Stop Loss e Take Profit: DECIDI TU i livelli ottimali basandoti su:
+  * Supporti e resistenze visibili
+  * Volatilità attuale del mercato
+  * Struttura del trend
+  * NON ci sono vincoli di pips - usa il tuo giudizio
+- Risk/Reward ratio: MINIMO 1:1.5 (preferibile 1:2)
+  Esempio: se SL = 10 pips, allora TP = 15 pips minimo (R/R 1:1.5)
+- Timeframe 1 minuto: DETERMINA IL TREND - opera SOLO nella direzione del trend
+- Timeframe 15 e 60 minuti: CONFERMANO il trend generale
+- MAI contro trend: se 1min è rialzista → SOLO BUY, se ribassista → SOLO SELL
 
 Rispondi SOLO con il JSON, senza testo aggiuntivo."""
 

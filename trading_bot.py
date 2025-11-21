@@ -74,10 +74,12 @@ def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str,
         for tf, path in available_screenshots.items():
             print(f"   - {tf}: {path}")
         
+        # Mostra ultimo prezzo conosciuto
+        if current_price:
+            print(f"\n💰 Ultimo prezzo conosciuto: {current_price}")
+        
         # Analizza con DeepSeek
         print("\n🤖 Analisi AI in corso...")
-        if current_price:
-            print(f"💰 Prezzo corrente da usare: {current_price}")
         analyzer = DeepSeekAnalyzer(api_key=deepseek_api_key)
         signal = analyzer.analyze_charts(available_screenshots, current_price=current_price)
         
