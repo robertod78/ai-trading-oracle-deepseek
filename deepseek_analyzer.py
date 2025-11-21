@@ -73,7 +73,7 @@ Dopo aver calcolato gli indicatori, analizza:
 - Volatilità e spread attuali
 
 ⚠️ IMPORTANTE: Devi fornire un segnale di trading che si chiuderà ENTRO UN MASSIMO DI 5 MINUTI.
-L'operazione deve avere un range di movimento AMPIO (15-40 pips) per evitare che sia già passata nel momento dell'esecuzione.
+L'operazione deve essere veloce e precisa con range contenuto (10-15 pips totali).
 
 Rispondi ESCLUSIVAMENTE in formato JSON con questa struttura esatta:
 {
@@ -85,10 +85,10 @@ Rispondi ESCLUSIVAMENTE in formato JSON con questa struttura esatta:
 }
 
 Criteri OBBLIGATORI per operazioni a 5 minuti:
-- Stop Loss: MASSIMO 20 pips per XAUUSD (range contenuto ma non troppo stretto)
-- Take Profit: MINIMO 20 pips (Risk/Reward ratio minimo 1:1, preferibile 1:2)
-  Esempio: se SL = 10 pips, allora TP = 20-30 pips (R/R 1:2 o 1:3)
-- Range contenuto ma efficace per operazioni veloci a 5 minuti
+- Stop Loss: MASSIMO 5-6 pips per XAUUSD (range stretto per scalping veloce)
+- Take Profit: MINIMO 10-12 pips (Risk/Reward ratio 1:2)
+  Esempio: se SL = 5 pips, allora TP = 10 pips (R/R 1:2)
+- Range totale: 15-18 pips massimo (operazione ultra-veloce)
 - Focus su timeframe 15 minuti per trend principale, confermato da 60 minuti
 - Timeframe 1 minuto per timing preciso dell'entrata e momentum immediato
 
