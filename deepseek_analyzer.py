@@ -1,27 +1,27 @@
+#!/usr/bin/env python3
 """
-Modulo per analizzare grafici tramite DeepSeek API
+DeepSeek Analyzer - Analisi grafici tramite Fireworks AI (Qwen3-VL 235B Instruct)
 """
 import base64
 import json
-from typing import Dict, List, Optional
 import urllib.request
-import urllib.parse
+from typing import Dict, Optional
 
 
 class DeepSeekAnalyzer:
-    """Classe per analizzare grafici di trading tramite Fireworks AI + DeepSeek V3"""
+    """Analizzatore di grafici CFD tramite Fireworks AI"""
     
     def __init__(self, api_key: str):
         """
-        Inizializza l'analyzer
+        Inizializza l'analizzatore
         
         Args:
-            api_key: Chiave API di Fireworks AI
+            api_key: Chiave API Fireworks AI
         """
         self.api_key = api_key
         self.api_url = "https://api.fireworks.ai/inference/v1/chat/completions"
         self.conversation_history = []
-        
+    
     def _encode_image(self, image_path: str) -> str:
         """
         Codifica un'immagine in base64
@@ -37,75 +37,109 @@ class DeepSeekAnalyzer:
     
     def _create_analysis_prompt(self) -> str:
         """
-        Crea il prompt per l'analisi tecnica
+        Crea il prompt per l'analisi dei grafici
         
         Returns:
             Prompt formattato
         """
-        prompt = """Analizza i tre grafici di trading forniti (1 minuto, 15 minuti, 1 ora).
+        prompt = """Sei un trader professionista esperto di scalping su XAUUSD (Gold).
+Analizza i tre grafici forniti (1 minuto, 15 minuti, 1 ora) e genera un segnale di trading PROFITTEVOLE.
 
-📊 FASE 1 - CALCOLO INDICATORI:
-Prima di analizzare, DEVI calcolare mentalmente i seguenti indicatori tecnici basandoti sui dati di prezzo visibili nei grafici:
+📊 FASE 1 - ANALISI TECNICA MULTI-TIMEFRAME:
 
-1. **EMA 9 e EMA 20 (Exponential Moving Average)**:
-   - Calcola EMA 9 e EMA 20 per identificare trend di breve e medio termine
-   - Identifica se il prezzo è sopra o sotto entrambe le EMA
-   - Verifica crossover tra EMA 9 e EMA 20 (segnale di cambio trend)
-   - Determina la direzione del trend (EMA in salita/discesa)
+1. **Grafico 1 ORA** - Contesto generale:
+   - Identifica il trend principale (rialzista/ribassista/laterale)
+   - Individua supporti e resistenze chiave
+   - Valuta la forza del trend (forte/debole)
 
-2. **MACD (Moving Average Convergence Divergence)**:
-   - Calcola MACD line (EMA 12 - EMA 26)
-   - Calcola Signal line (EMA 9 del MACD)
-   - Identifica crossover, divergenze e posizione rispetto allo zero
+2. **Grafico 15 MINUTI** - Trend intermedio:
+   - Conferma o diverge dal trend 1H?
+   - Ci sono pattern di inversione o continuazione?
+   - Dove sono i supporti/resistenze più vicini?
 
-3. **RSI (Relative Strength Index a 14 periodi)**:
-   - Calcola RSI basandoti sui movimenti di prezzo recenti
-   - Identifica zone di ipercomprato (>70), ipervenduto (<30) o neutre
-   - Cerca divergenze con il prezzo
+3. **Grafico 1 MINUTO** - Timing di entrata (DECISIVO):
+   - Questo timeframe DETERMINA la direzione dell'operazione
+   - Trend 1min RIALZISTA → SOLO BUY
+   - Trend 1min RIBASSISTA → SOLO SELL
+   - Identifica il punto di entrata ottimale
+   - Valuta momentum immediato (EMA 9/20, MACD, RSI)
 
-📈 FASE 2 - ANALISI TECNICA:
-Dopo aver calcolato gli indicatori, analizza:
-- Price action (supporti, resistenze, pattern)
-- Convergenza/divergenza tra indicatori sui 3 timeframe
-- Momentum immediato sul grafico 1 minuto
-- Conferma trend dal timeframe 15 minuti
-- Contesto generale dal timeframe 1 ora
-- Volatilità e spread attuali
+🎯 FASE 2 - DECISIONE OPERATIVA:
 
-⚠️ IMPORTANTE: Devi fornire un segnale di trading che si chiuderà ENTRO UN MASSIMO DI 5 MINUTI.
-L'operazione DEVE essere SEMPRE PRO-TREND basandoti sul timeframe 1 minuto:
-- Se il trend a 1 minuto è RIALZISTA (prezzo sopra EMA, MACD positivo) → SOLO BUY
-- Se il trend a 1 minuto è RIBASSISTA (prezzo sotto EMA, MACD negativo) → SOLO SELL
-- MAI operare contro il trend del timeframe 1 minuto
+REGOLE FONDAMENTALI:
+✅ Opera SOLO nella direzione del trend 1 minuto
+✅ MAI contro trend
+✅ Usa 15min e 1H solo per CONFERMA, non per direzione
+✅ Entra solo se hai ALTA PROBABILITÀ di successo (>70%)
+
+📐 FASE 3 - CALCOLO STOP LOSS E TAKE PROFIT:
+
+⚠️ ATTENZIONE: XAUUSD si quota con 2 decimali (es: 2654.32)
+1 pip = 0.10 (es: da 2654.30 a 2654.40 = 1 pip)
+10 pips = 1.00 (es: da 2654.00 a 2655.00 = 10 pips)
+
+🔴 LOGICA STOP LOSS:
+- **BUY**: Stop Loss SOTTO il prezzo di entrata (protegge da discesa)
+  Esempio: Prezzo entrata 2654.50 → SL 2653.50 (10 pips sotto)
+  
+- **SELL**: Stop Loss SOPRA il prezzo di entrata (protegge da salita)
+  Esempio: Prezzo entrata 2654.50 → SL 2655.50 (10 pips sopra)
+
+🟢 LOGICA TAKE PROFIT:
+- **BUY**: Take Profit SOPRA il prezzo di entrata (guadagno da salita)
+  Esempio: Prezzo entrata 2654.50 → TP 2656.00 (15 pips sopra)
+  
+- **SELL**: Take Profit SOTTO il prezzo di entrata (guadagno da discesa)
+  Esempio: Prezzo entrata 2654.50 → TP 2653.00 (15 pips sotto)
+
+📏 DIMENSIONAMENTO SL/TP:
+- Range consigliato per 5 minuti: 8-15 pips per SL, 12-25 pips per TP
+- Risk/Reward ratio: MINIMO 1:1.5 (preferibile 1:2)
+- Posiziona SL OLTRE il supporto/resistenza più vicino (non esattamente sopra)
+- Posiziona TP PRIMA del supporto/resistenza successivo (non esattamente sotto)
+
+💡 ESEMPI CONCRETI:
+
+Esempio 1 - BUY:
+Prezzo corrente: 2654.50
+Trend 1min: RIALZISTA
+Supporto vicino: 2653.80
+Resistenza vicina: 2656.20
+→ SL: 2653.50 (sotto supporto, 10 pips)
+→ TP: 2656.00 (prima resistenza, 15 pips)
+→ R/R: 1:1.5 ✅
+
+Esempio 2 - SELL:
+Prezzo corrente: 2654.50
+Trend 1min: RIBASSISTA
+Resistenza vicina: 2655.20
+Supporto vicino: 2652.80
+→ SL: 2655.50 (sopra resistenza, 10 pips)
+→ TP: 2652.50 (prima supporto, 20 pips)
+→ R/R: 1:2 ✅
 
 ⚠️ FORMATO RISPOSTA OBBLIGATORIO:
-Devi rispondere SOLO ed ESCLUSIVAMENTE con un oggetto JSON valido.
-NO markdown, NO ```json, NO testo prima o dopo, NO emoji nel JSON.
-SOLO il JSON puro con questa struttura esatta:
+Rispondi SOLO con JSON puro, senza testo aggiuntivo, markdown o emoji.
+La risposta DEVE iniziare con { e finire con }
 
 {
     "operazione": "BUY",
     "lotto": 0.01,
-    "stop_loss": 2650.50,
-    "take_profit": 2655.75,
-    "spiegazione": "Testo dettagliato qui"
+    "stop_loss": 2653.50,
+    "take_profit": 2656.00,
+    "spiegazione": "Trend 1min rialzista confermato da 15min. EMA 9 sopra EMA 20, MACD positivo. Supporto a 2653.80, resistenza a 2656.20. SL sotto supporto (10 pips), TP prima resistenza (15 pips). R/R 1:1.5"
 }
 
-Criteri OBBLIGATORI per operazioni a 5 minuti:
-- Stop Loss e Take Profit: DECIDI TU i livelli ottimali basandoti su:
-  * Supporti e resistenze visibili
-  * Volatilità attuale del mercato
-  * Struttura del trend
-  * NON ci sono vincoli di pips - usa il tuo giudizio
-- Risk/Reward ratio: MINIMO 1:1.5 (preferibile 1:2)
-  Esempio: se SL = 10 pips, allora TP = 15 pips minimo (R/R 1:1.5)
-- Timeframe 1 minuto: DETERMINA IL TREND - opera SOLO nella direzione del trend
-- Timeframe 15 e 60 minuti: CONFERMANO il trend generale
-- MAI contro trend: se 1min è rialzista → SOLO BUY, se ribassista → SOLO SELL
+🚨 VALIDAZIONE FINALE (controlla SEMPRE):
+1. Direzione corretta? (BUY se trend 1min rialzista, SELL se ribassista)
+2. SL nella direzione giusta? (BUY: SL < prezzo, SELL: SL > prezzo)
+3. TP nella direzione giusta? (BUY: TP > prezzo, SELL: TP < prezzo)
+4. R/R >= 1:1.5? (distanza TP >= 1.5x distanza SL)
+5. Range realistico per 5 minuti? (8-25 pips totali)
 
-🚨 IMPORTANTE: La tua risposta DEVE iniziare con { e finire con }
-NO testo prima del JSON, NO testo dopo il JSON, NO code blocks.
-SOLO JSON PURO E VALIDO."""
+Se anche UNA sola validazione fallisce, RICOMINCIA il calcolo.
+
+Rispondi SOLO con il JSON, niente altro."""
 
         return prompt
     
@@ -127,8 +161,8 @@ SOLO JSON PURO E VALIDO."""
             
             # Aggiungi prezzo corrente se disponibile
             if current_price is not None:
-                prompt_text += f"\n\n⚠️ PREZZO CORRENTE (ultimo valore conosciuto): {current_price:.2f}\n"
-                prompt_text += "Usa QUESTO prezzo per calcolare Stop Loss e Take Profit precisi.\n"
+                prompt_text += f"\n\n💰 PREZZO CORRENTE (usa QUESTO per i calcoli): {current_price:.2f}\n"
+                prompt_text += "Calcola Stop Loss e Take Profit partendo da QUESTO prezzo.\n"
             
             content = [
                 {
@@ -230,6 +264,50 @@ SOLO JSON PURO E VALIDO."""
                     print(f"Campo mancante nella risposta: {field}")
                     return None
             
+            # VALIDAZIONE AGGIUNTIVA: controlla logica SL/TP
+            if current_price:
+                op = signal["operazione"].upper()
+                sl = float(signal["stop_loss"])
+                tp = float(signal["take_profit"])
+                
+                print(f"\n🔍 Validazione segnale:")
+                print(f"   Operazione: {op}")
+                print(f"   Prezzo corrente: {current_price:.2f}")
+                print(f"   Stop Loss: {sl:.2f}")
+                print(f"   Take Profit: {tp:.2f}")
+                
+                # Validazione logica BUY
+                if op == "BUY":
+                    if sl >= current_price:
+                        print(f"   ❌ ERRORE: BUY con SL >= prezzo corrente (SL deve essere SOTTO)")
+                        return None
+                    if tp <= current_price:
+                        print(f"   ❌ ERRORE: BUY con TP <= prezzo corrente (TP deve essere SOPRA)")
+                        return None
+                
+                # Validazione logica SELL
+                elif op == "SELL":
+                    if sl <= current_price:
+                        print(f"   ❌ ERRORE: SELL con SL <= prezzo corrente (SL deve essere SOPRA)")
+                        return None
+                    if tp >= current_price:
+                        print(f"   ❌ ERRORE: SELL con TP >= prezzo corrente (TP deve essere SOTTO)")
+                        return None
+                
+                # Calcola R/R ratio
+                sl_distance = abs(current_price - sl)
+                tp_distance = abs(tp - current_price)
+                rr_ratio = tp_distance / sl_distance if sl_distance > 0 else 0
+                
+                print(f"   SL distance: {sl_distance:.2f} pips")
+                print(f"   TP distance: {tp_distance:.2f} pips")
+                print(f"   R/R ratio: 1:{rr_ratio:.2f}")
+                
+                if rr_ratio < 1.5:
+                    print(f"   ⚠️ WARNING: R/R ratio < 1:1.5 (non ottimale)")
+                
+                print(f"   ✅ Validazione superata")
+            
             return signal
             
         except json.JSONDecodeError as e:
@@ -252,17 +330,17 @@ if __name__ == "__main__":
     api_key = os.getenv("FIREWORKS_API_KEY", "your-api-key-here")
     analyzer = DeepSeekAnalyzer(api_key)
     
-    # Test con screenshot fittizi
-    test_screenshots = {
-        "1min": "screenshots/XAUUSD_1min.png",
-        "15min": "screenshots/XAUUSD_15min.png",
-        "60min": "screenshots/XAUUSD_60min.png"
+    # Test con screenshot di esempio
+    screenshots = {
+        "1min": "screenshots/xauusd_1min.png",
+        "15min": "screenshots/xauusd_15min.png",
+        "60min": "screenshots/xauusd_60min.png"
     }
     
-    signal = analyzer.analyze_charts(test_screenshots)
+    signal = analyzer.analyze_charts(screenshots)
     
     if signal:
-        print("\nSegnale di trading ricevuto:")
-        print(json.dumps(signal, indent=2, ensure_ascii=False))
+        print("\n✅ Segnale ricevuto:")
+        print(json.dumps(signal, indent=2))
     else:
-        print("Nessun segnale ricevuto o errore nell'analisi")
+        print("\n❌ Nessun segnale ricevuto")
