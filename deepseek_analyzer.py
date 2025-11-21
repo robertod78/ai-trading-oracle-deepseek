@@ -96,12 +96,13 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
 
         return prompt
     
-    def analyze_charts(self, screenshots: Dict[str, str], account_size: float = 1000.0) -> Optional[Dict]:
+    def analyze_charts(self, screenshots: Dict[str, str], current_price: Optional[float] = None, account_size: float = 1000.0) -> Optional[Dict]:
         """
         Analizza i grafici e restituisce un segnale di trading
         
         Args:
             screenshots: Dizionario con i percorsi degli screenshot {timeframe: path}
+            current_price: Prezzo corrente del simbolo (opzionale)
             account_size: Dimensione del conto in USD
             
         Returns:
@@ -109,10 +110,17 @@ Rispondi SOLO con il JSON, senza testo aggiuntivo."""
         """
         try:
             # Prepara il contenuto del messaggio - FORMATO OPENAI COMPATIBILE
+            prompt_text = self._create_analysis_prompt()
+            
+            # Aggiungi prezzo corrente se disponibile
+            if current_price is not None:
+                prompt_text += f"\n\n⚠️ PREZZO CORRENTE (ultimo valore conosciuto): {current_price:.2f}\n"
+                prompt_text += "Usa QUESTO prezzo per calcolare Stop Loss e Take Profit precisi.\n"
+            
             content = [
                 {
                     "type": "text",
-                    "text": self._create_analysis_prompt()
+                    "text": prompt_text
                 }
             ]
             

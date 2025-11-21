@@ -55,9 +55,9 @@ def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str,
     scraper = TradingViewScraper(symbol=symbol, broker=broker)
     
     try:
-        # Cattura screenshot
+        # Cattura screenshot ed estrai prezzo corrente
         print("\n📸 Cattura screenshot in corso...")
-        screenshots = scraper.capture_all_timeframes(output_dir=screenshots_dir)
+        screenshots, current_price = scraper.capture_all_timeframes(output_dir=screenshots_dir)
         
         # Verifica che tutti gli screenshot siano stati catturati
         missing = [tf for tf, path in screenshots.items() if path is None]
@@ -76,8 +76,10 @@ def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str,
         
         # Analizza con DeepSeek
         print("\n🤖 Analisi AI in corso...")
+        if current_price:
+            print(f"💰 Prezzo corrente da usare: {current_price}")
         analyzer = DeepSeekAnalyzer(api_key=deepseek_api_key)
-        signal = analyzer.analyze_charts(available_screenshots)
+        signal = analyzer.analyze_charts(available_screenshots, current_price=current_price)
         
         if signal:
             print("✅ Segnale ricevuto con successo")

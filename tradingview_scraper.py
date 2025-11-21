@@ -138,13 +138,15 @@ class TradingViewScraper:
     
     def capture_all_timeframes(self, output_dir="screenshots"):
         """
-        Cattura screenshot di tutti i timeframe
+        Cattura screenshot di tutti i timeframe ed estrae il prezzo corrente
         
         Args:
             output_dir: Directory dove salvare gli screenshot
             
         Returns:
-            Dizionario con i percorsi degli screenshot {timeframe: path}
+            Tupla (screenshots_dict, current_price)
+            - screenshots_dict: Dizionario con i percorsi degli screenshot {timeframe: path}
+            - current_price: Prezzo corrente estratto dalla pagina
         """
         os.makedirs(output_dir, exist_ok=True)
         
@@ -191,9 +193,27 @@ class TradingViewScraper:
         
         print(f"\n   Successo: {success_count}/3")
         print("="*70)
+        
+        # Estrai prezzo corrente dalla pagina
+        current_price = None
+        try:
+            # Cerca il prezzo nella pagina (elemento con classe che contiene il prezzo)
+            price_element = self.page.locator('[class*="last-"]').first
+            if price_element:
+                price_text = price_element.text_content()
+                # Estrai solo i numeri e il punto decimale
+                import re
+                price_match = re.search(r'([0-9,]+\.?[0-9]*)', price_text.replace(',', ''))
+                if price_match:
+                    current_price = float(price_match.group(1))
+                    print(f"\n💰 Prezzo corrente estratto: {current_price}")
+        except Exception as e:
+            print(f"\n⚠️  Impossibile estrarre prezzo corrente: {e}")
+        
+        print("="*70)
         print()
         
-        return screenshots
+        return screenshots, current_price
     
     def close(self):
         """Chiude il browser e Playwright"""
