@@ -71,8 +71,8 @@ Dopo aver calcolato gli indicatori, analizza:
 - Contesto generale dal timeframe 1 ora
 - Volatilità e spread attuali
 
-⚠️ IMPORTANTE: Devi fornire un segnale di trading con orizzonte temporale di 10-30 MINUTI.
-L'operazione deve avere un range di movimento adeguato per evitare che sia già passata nel momento dell'esecuzione.
+⚠️ IMPORTANTE: Devi fornire un segnale di trading che si chiuderà ENTRO UN MASSIMO DI 5 MINUTI.
+L'operazione deve avere un range di movimento AMPIO (15-40 pips) per evitare che sia già passata nel momento dell'esecuzione.
 
 Rispondi ESCLUSIVAMENTE in formato JSON con questa struttura esatta:
 {
@@ -83,13 +83,13 @@ Rispondi ESCLUSIVAMENTE in formato JSON con questa struttura esatta:
     "spiegazione": "Spiegazione dettagliata che DEVE includere: 1) Valori calcolati di EMA 9, MACD e RSI sui 3 timeframe, 2) Analisi price action, 3) Motivi della scelta operativa"
 }
 
-Criteri OBBLIGATORI per le operazioni:
-- Stop Loss: minimo 15-20 pips per XAUUSD (evitare SL troppo stretti che vengono colpiti dal noise)
+Criteri OBBLIGATORI per operazioni a 5 minuti:
+- Stop Loss: minimo 15-20 pips per XAUUSD (range AMPIO per evitare noise e operazioni già passate)
 - Take Profit: DEVE essere esattamente il DOPPIO dello Stop Loss (Risk/Reward ratio 1:2)
   Esempio: se SL = 20 pips, allora TP = 40 pips
-- Orizzonte temporale: 10-30 minuti (né troppo breve né troppo lungo)
+- Range totale operazione: 35-60 pips (SL + TP), sufficientemente ampio per 5 minuti
 - Focus su timeframe 15 minuti per trend principale, confermato da 60 minuti
-- Timeframe 1 minuto solo per timing preciso dell'entrata
+- Timeframe 1 minuto per timing preciso dell'entrata e momentum immediato
 
 Rispondi SOLO con il JSON, senza testo aggiuntivo."""
 
