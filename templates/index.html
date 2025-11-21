@@ -204,6 +204,10 @@
                 <div class="status-value"><span id="interval">-</span> min</div>
             </div>
             <div class="status-item">
+                <div class="status-label">Current Price</div>
+                <div class="status-value" id="currentPrice">-</div>
+            </div>
+            <div class="status-item">
                 <div class="status-label">Last Update</div>
                 <div class="status-value" id="timestamp">-</div>
             </div>
@@ -280,6 +284,13 @@
                     document.getElementById('symbol').textContent = data.symbol;
                     document.getElementById('broker').textContent = data.broker;
                     document.getElementById('interval').textContent = data.interval;
+                    
+                    // Mostra prezzo corrente
+                    if (data.current_price) {
+                        document.getElementById('currentPrice').textContent = data.current_price.toFixed(2);
+                    } else {
+                        document.getElementById('currentPrice').textContent = '-';
+                    }
                     
                     const timestamp = new Date(data.timestamp);
                     document.getElementById('timestamp').textContent = timestamp.toLocaleTimeString();

@@ -21,6 +21,7 @@ app = Flask(__name__)
 log_queue = queue.Queue()
 bot_thread = None
 bot_running = False
+current_price_global = None  # Ultimo prezzo conosciuto
 
 class LogCapture:
     """Cattura i log e li mette nella coda"""
@@ -90,12 +91,16 @@ def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str,
         for tf, path in available_screenshots.items():
             log_message(f"   - {tf}: {path}")
         
+        # Mostra ultimo prezzo conosciuto
+        if current_price:
+            global current_price_global
+            current_price_global = current_price
+            log_message(f"\n💰 Ultimo prezzo conosciuto: {current_price}")
+        
         # Analizza con DeepSeek
         log_message("\n🤖 Analisi AI in corso...")
-        if current_price:
-            log_message(f"💰 Prezzo corrente da usare: {current_price}")
         analyzer = DeepSeekAnalyzer(api_key=deepseek_api_key)
-        signal = analyzer.analyze_charts(available_screenshots, current_price=current_price)
+        signal = analyzer.analyze_charts(available_screenshots, current_price=current_price, symbol=symbol)
         
         if signal:
             log_message("✅ Segnale ricevuto con successo")
@@ -199,6 +204,7 @@ def status():
         'symbol': os.getenv('SYMBOL', 'XAUUSD'),
         'broker': os.getenv('BROKER', 'EIGHTCAP'),
         'interval': os.getenv('INTERVAL', '10'),
+        'current_price': current_price_global,
         'timestamp': datetime.now().isoformat()
     })
 

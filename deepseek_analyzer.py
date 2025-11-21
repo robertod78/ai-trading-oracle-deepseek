@@ -210,7 +210,7 @@ La risposta DEVE iniziare con { e finire con }
 Rispondi SOLO con il JSON, niente altro."""
             return prompt
     
-    def analyze_charts(self, screenshots: Dict[str, str], current_price: Optional[float] = None, account_size: float = 1000.0) -> Optional[Dict]:
+    def analyze_charts(self, screenshots: Dict[str, str], current_price: Optional[float] = None, account_size: float = 1000.0, symbol: str = "XAUUSD") -> Optional[Dict]:
         """
         Analizza i grafici e restituisce un segnale di trading
         
@@ -218,6 +218,7 @@ Rispondi SOLO con il JSON, niente altro."""
             screenshots: Dizionario con i percorsi degli screenshot {timeframe: path}
             current_price: Prezzo corrente del simbolo (opzionale)
             account_size: Dimensione del conto in USD
+            symbol: Simbolo del CFD (es. XAUUSD)
             
         Returns:
             Dizionario con il segnale di trading o None se errore
@@ -228,8 +229,9 @@ Rispondi SOLO con il JSON, niente altro."""
             
             # Aggiungi prezzo corrente se disponibile
             if current_price is not None:
-                prompt_text += f"\n\n💰 PREZZO CORRENTE (usa QUESTO per i calcoli): {current_price:.2f}\n"
-                prompt_text += "Calcola Stop Loss e Take Profit partendo da QUESTO prezzo.\n"
+                price_line = f"\n\nUltimo valore conosciuto di {symbol}: {current_price:.2f}\n"
+                prompt_text += price_line
+                print(f"   ✅ Prezzo accodato al prompt: {price_line.strip()}")
             
             content = [
                 {

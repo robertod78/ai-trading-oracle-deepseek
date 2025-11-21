@@ -81,7 +81,7 @@ def run_analysis_cycle(symbol: str, broker: str, deepseek_api_key: str,
         # Analizza con DeepSeek
         print("\n🤖 Analisi AI in corso...")
         analyzer = DeepSeekAnalyzer(api_key=deepseek_api_key)
-        signal = analyzer.analyze_charts(available_screenshots, current_price=current_price)
+        signal = analyzer.analyze_charts(available_screenshots, current_price=current_price, symbol=symbol)
         
         if signal:
             print("✅ Segnale ricevuto con successo")
