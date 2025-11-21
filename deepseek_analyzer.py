@@ -4,6 +4,7 @@ DeepSeek Analyzer - Analisi grafici tramite Fireworks AI (Qwen3-VL 235B Instruct
 """
 import base64
 import json
+import os
 import time
 import urllib.request
 import urllib.error
@@ -39,12 +40,25 @@ class DeepSeekAnalyzer:
     
     def _create_analysis_prompt(self) -> str:
         """
-        Crea il prompt per l'analisi dei grafici
+        Carica il prompt per l'analisi dei grafici dal file prompt.txt
         
         Returns:
             Prompt formattato
         """
-        prompt = """Sei un trader professionista esperto di scalping su XAUUSD (Gold).
+        # Percorso del file prompt (nella stessa directory dello script)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        prompt_file = os.path.join(script_dir, "prompt.txt")
+        
+        # Leggi il prompt dal file
+        try:
+            with open(prompt_file, "r", encoding="utf-8") as f:
+                prompt = f.read()
+            return prompt
+        except FileNotFoundError:
+            print(f"⚠️  File prompt.txt non trovato in {script_dir}")
+            print("   Uso prompt di default...")
+            # Fallback al prompt di default se il file non esiste
+            prompt = """Sei un trader professionista esperto di scalping su XAUUSD (Gold).
 Analizza i tre grafici forniti (1 minuto, 15 minuti, 1 ora) e genera un segnale di trading PROFITTEVOLE.
 
 📊 FASE 1 - ANALISI TECNICA MULTI-TIMEFRAME:
@@ -96,9 +110,38 @@ REGOLE FONDAMENTALI:
 
 📏 DIMENSIONAMENTO SL/TP:
 - Range consigliato per 5 minuti: 8-15 pips per SL, 12-25 pips per TP
-- Risk/Reward ratio: MINIMO 1:1.5 (preferibile 1:2)
 - Posiziona SL OLTRE il supporto/resistenza più vicino (non esattamente sopra)
 - Posiziona TP PRIMA del supporto/resistenza successivo (non esattamente sotto)
+
+🧮 CALCOLO RISK/REWARD RATIO (FONDAMENTALE):
+
+Formula R/R = (Distanza TP) / (Distanza SL)
+
+**Per BUY:**
+- Distanza SL = Prezzo Entrata - Stop Loss (quanto RISCHI)
+- Distanza TP = Take Profit - Prezzo Entrata (quanto GUADAGNI)
+- R/R = (TP - Prezzo) / (Prezzo - SL)
+
+**Per SELL:**
+- Distanza SL = Stop Loss - Prezzo Entrata (quanto RISCHI)
+- Distanza TP = Prezzo Entrata - Take Profit (quanto GUADAGNI)
+- R/R = (Prezzo - TP) / (SL - Prezzo)
+
+⚠️ REGOLA AUREA: Distanza TP DEVE essere >= 1.5x Distanza SL
+
+Esempio CORRETTO (SELL):
+- Prezzo: 4068.5
+- SL: 4070.5 → Distanza SL = 4070.5 - 4068.5 = 2.0 (rischio 20 pips)
+- TP: 4065.5 → Distanza TP = 4068.5 - 4065.5 = 3.0 (guadagno 30 pips)
+- R/R = 3.0 / 2.0 = 1.5 ✅
+
+Esempio SBAGLIATO (SELL):
+- Prezzo: 4068.5
+- SL: 4070.5 → Distanza SL = 2.0 (rischio 20 pips)
+- TP: 4067.0 → Distanza TP = 1.5 (guadagno 15 pips) ❌
+- R/R = 1.5 / 2.0 = 0.75 ❌ INACCETTABILE!
+
+DEVI SEMPRE: Guadagno >= 1.5x Rischio
 
 💡 ESEMPI CONCRETI:
 
@@ -116,9 +159,12 @@ Prezzo corrente: 2654.50
 Trend 1min: RIBASSISTA
 Resistenza vicina: 2655.20
 Supporto vicino: 2652.80
-→ SL: 2655.50 (sopra resistenza, 10 pips)
-→ TP: 2652.50 (prima supporto, 20 pips)
-→ R/R: 1:2 ✅
+→ SL: 2655.50 (sopra resistenza)
+→ TP: 2652.50 (prima supporto)
+CALCOLO R/R:
+  Distanza SL = 2655.50 - 2654.50 = 1.00 (10 pips RISCHIO)
+  Distanza TP = 2654.50 - 2652.50 = 2.00 (20 pips GUADAGNO)
+  R/R = 2.00 / 1.00 = 2.0 → 1:2 ✅ OTTIMO!
 
 ⚠️ FORMATO RISPOSTA OBBLIGATORIO:
 Rispondi SOLO con JSON puro, senza testo aggiuntivo, markdown o emoji.
@@ -132,18 +178,37 @@ La risposta DEVE iniziare con { e finire con }
     "spiegazione": "Trend 1min rialzista confermato da 15min. EMA 9 sopra EMA 20, MACD positivo. Supporto a 2653.80, resistenza a 2656.20. SL sotto supporto (10 pips), TP prima resistenza (15 pips). R/R 1:1.5"
 }
 
-🚨 VALIDAZIONE FINALE (controlla SEMPRE):
-1. Direzione corretta? (BUY se trend 1min rialzista, SELL se ribassista)
-2. SL nella direzione giusta? (BUY: SL < prezzo, SELL: SL > prezzo)
-3. TP nella direzione giusta? (BUY: TP > prezzo, SELL: TP < prezzo)
-4. R/R >= 1:1.5? (distanza TP >= 1.5x distanza SL)
-5. Range realistico per 5 minuti? (8-25 pips totali)
+🚨 VALIDAZIONE FINALE (controlla SEMPRE PRIMA DI RISPONDERE):
 
-Se anche UNA sola validazione fallisce, RICOMINCIA il calcolo.
+1. Direzione corretta? 
+   ✅ BUY solo se trend 1min RIALZISTA
+   ✅ SELL solo se trend 1min RIBASSISTA
+
+2. SL nella direzione giusta?
+   ✅ BUY: SL < Prezzo Corrente
+   ✅ SELL: SL > Prezzo Corrente
+
+3. TP nella direzione giusta?
+   ✅ BUY: TP > Prezzo Corrente
+   ✅ SELL: TP < Prezzo Corrente
+
+4. CALCOLA R/R RATIO:
+   - Se BUY: R/R = (TP - Prezzo) / (Prezzo - SL)
+   - Se SELL: R/R = (Prezzo - TP) / (SL - Prezzo)
+   ✅ R/R DEVE essere >= 1.5
+   ❌ Se R/R < 1.5 → AUMENTA TP o RIDUCI SL
+
+5. Range realistico?
+   ✅ SL: 8-15 pips
+   ✅ TP: 12-30 pips
+
+⚠️ SE ANCHE UNA SOLA VALIDAZIONE FALLISCE:
+→ NON rispondere con quel segnale
+→ RICOMINCIA il calcolo da zero
+→ CORREGGI i valori fino a superare TUTTE le validazioni
 
 Rispondi SOLO con il JSON, niente altro."""
-
-        return prompt
+            return prompt
     
     def analyze_charts(self, screenshots: Dict[str, str], current_price: Optional[float] = None, account_size: float = 1000.0) -> Optional[Dict]:
         """
